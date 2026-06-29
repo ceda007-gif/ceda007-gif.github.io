@@ -167,4 +167,131 @@
         .rate-code {
             font-size: 11px;
             color: #777;
-            background: #eee
+            background: #eee;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        /* Pie de página */
+        footer {
+            background-color: #222;
+            color: #aaa;
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="#" class="logo" id="hotel-logo">Cargando...</a>
+        <nav>
+            <a href="#">Inicio</a>
+            <a href="#habitaciones">Habitaciones</a>
+            <a href="#">Contacto</a>
+        </nav>
+    </header>
+
+    <div class="hero" id="hero-section">
+        <h1 id="hero-headline">Cargando...</h1>
+        <p id="hero-subheadline">Por favor espera un momento.</p>
+    </div>
+
+    <div class="booking-bar">
+        <div class="booking-field">
+            <label>Llegada</label>
+            <input type="date">
+        </div>
+        <div class="booking-field">
+            <label>Salida</label>
+            <input type="date">
+        </div>
+        <div class="booking-field">
+            <label>Huéspedes</label>
+            <select>
+                <option>1 Adulto</option>
+                <option selected>2 Adultos</option>
+                <option>3 Adultos</option>
+            </select>
+        </div>
+        <button class="btn-book" id="btn-booking-engine">Reservar</button>
+    </div>
+
+    <div class="content" id="habitaciones">
+        <h2>Nuestras Habitaciones y Suites</h2>
+        <div class="rooms-grid" id="rooms-container">
+            </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 <span id="footer-hotel-name">Resort</span>. Todos los derechos reservados.</p>
+        <p id="footer-location">Ubicación</p>
+    </footer>
+
+    <script>
+        async function loadHotelData() {
+            try {
+                // Llama al archivo data.json que está en el mismo repositorio
+                const response = await fetch('data.json');
+                const data = await response.json();
+
+                // 1. Cargar Configuración General del Hotel
+                document.title = data.hotelSettings.propertyName;
+                document.getElementById('hotel-logo').textContent = data.hotelSettings.propertyName;
+                document.getElementById('footer-hotel-name').textContent = data.hotelSettings.propertyName;
+                document.getElementById('footer-location').textContent = data.hotelSettings.location;
+                
+                // Configurar enlace del motor de reservas si existe
+                const bookBtn = document.getElementById('btn-booking-engine');
+                bookBtn.onclick = () => {
+                    window.location.href = data.hotelSettings.bookingEngineUrl;
+                };
+
+                // 2. Cargar Sección Hero
+                document.getElementById('hero-headline').textContent = data.heroSection.headline;
+                document.getElementById('hero-subheadline').textContent = data.heroSection.subheadline;
+                document.getElementById('hero-section').style.backgroundImage = `url('${data.heroSection.heroImage}')`;
+
+                // 3. Cargar Inventario de Habitaciones Dinámicamente
+                const roomsContainer = document.getElementById('rooms-container');
+                roomsContainer.innerHTML = ''; // Limpiar el contenedor de carga
+
+                data.roomInventory.forEach(room => {
+                    // Filtrar solo las habitaciones que tengan disponibilidad activa
+                    if (room.isAvailable) {
+                        const roomCard = document.createElement('div');
+                        roomCard.className = 'room-card';
+
+                        // Formatear el precio de acuerdo a la moneda del JSON
+                        const formattedPrice = new Intl.NumberFormat('es-MX', {
+                            style: 'currency',
+                            currency: room.pricing.currency
+                        }).format(room.pricing.baseRate);
+
+                        roomCard.innerHTML = `
+                            <img src="${room.imageUrl}" alt="${room.title}">
+                            <div>
+                                <h3>${room.title}</h3>
+                                <p>${room.description}</p>
+                            </div>
+                            <div class="room-pricing">
+                                <span class="price-amount">${formattedPrice} <span style="font-size:12px; font-weight:normal;">${room.pricing.currency}</span></span>
+                                <span class="rate-code">${room.pricing.rateCode}</span>
+                            </div>
+                        `;
+                        roomsContainer.appendChild(roomCard);
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error al cargar la configuración de la página:", error);
+                document.getElementById('hero-headline').textContent = "Error al cargar la información";
+            }
+        }
+
+        // Ejecutar la función cuando la página termine de cargar
+        window.onload = loadHotelData;
+    </script>
+</body>
+</html>
