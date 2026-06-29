@@ -20,7 +20,11 @@
         "currency": "MXN",
         "rateCode": "BAR"
       },
-      "features": ["Cama King", "Wi-Fi de alta velocidad", "Balcón"],
+      "features": [
+        "Cama King",
+        "Wi-Fi de alta velocidad",
+        "Balcón"
+      ],
       "isAvailable": true
     },
     {
@@ -33,7 +37,11 @@
         "currency": "MXN",
         "rateCode": "BAR"
       },
-      "features": ["Vista al mar", "Tina de hidromasaje", "Acceso a Club Lounge"],
+      "features": [
+        "Vista al mar",
+        "Tina de hidromasaje",
+        "Acceso a Club Lounge"
+      ],
       "isAvailable": true
     }
   ]
