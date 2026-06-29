@@ -1,0 +1,40 @@
+{
+  "hotelSettings": {
+    "propertyName": "Tropicana Los Cabos, Tapestry Collection by Hilton",
+    "location": "Baja California Sur, México",
+    "bookingEngineUrl": "https://reservas.tu-hotel.com"
+  },
+  "heroSection": {
+    "headline": "Tu Escape en el Paraíso",
+    "subheadline": "Descubre el confort y la elegancia frente al mar.",
+    "heroImage": "https://images.unsplash.com/photo-1540541338287-41700207dee6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80"
+  },
+  "roomInventory": [
+    {
+      "roomId": "STE-CLA-01",
+      "title": "Suite Clásica",
+      "description": "Comodidad esencial con vistas a nuestros jardines tropicales.",
+      "imageUrl": "https://images.unsplash.com/photo-1611892440504-42a792e24d32?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "pricing": {
+        "baseRate": 3500,
+        "currency": "MXN",
+        "rateCode": "BAR"
+      },
+      "features": ["Cama King", "Wi-Fi de alta velocidad", "Balcón"],
+      "isAvailable": true
+    },
+    {
+      "roomId": "STE-OCN-02",
+      "title": "Suite Frente al Mar",
+      "description": "Vistas espectaculares al océano y balcón privado.",
+      "imageUrl": "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "pricing": {
+        "baseRate": 5200,
+        "currency": "MXN",
+        "rateCode": "BAR"
+      },
+      "features": ["Vista al mar", "Tina de hidromasaje", "Acceso a Club Lounge"],
+      "isAvailable": true
+    }
+  ]
+}
