@@ -3,10 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Primera Página en GitHub</title>
+    <title>Hotel Boutique - Los Cabos</title>
+    <style>
+        /* Estilos generales */
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            background-color: #f9f9f9;
+        }
+
+        /* Barra de navegación */
+        header {
+            background-color: #fff;
+            padding: 15px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #d4af37; /* Color dorado */
+            text-decoration: none;
+        }
+        nav a {
+            margin-left: 20px;
+            text-decoration: none;
+            color: #555;
+            font-weight: 500;
+        }
+        nav a:hover {
+            color: #d4af37;
+        }
+
+        /* Imagen principal (Hero) */
+        .hero {
+            background-image: url('https://images.unsplash.com/photo-1540541338287-41700207dee6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            height: 60vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+        }
+        .hero h1 {
+            font-size: 48px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .hero p {
+            font-size: 20px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+
+        /* Barra de Reservas */
+        .booking-bar {
+            background-color: #fff;
+            padding: 20px;
+            margin: -30px auto 40px auto;
+            width: 80%;
+            border-radius: 5px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+        .booking-field {
+            display: flex;
+            flex-direction: column;
+        }
+        .booking-field label {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #777;
+            margin-bottom: 5px;
+        }
+        .booking-field input, .booking-field select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .btn-book {
+            background-color: #d4af37;
+            color: #fff;
+            border: none;
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .btn-book:hover {
+            background-color: #b5952f;
+        }
+
+        /* Sección de Contenido */
+        .content {
+            padding: 40px 10%;
+            text-align: center;
+        }
+        .content h2 {
+            font-size: 32px;
+            color: #222;
+            margin-bottom: 20px;
+        }
+        
+        /* Cuadrícula de Habitaciones */
+        .rooms-grid {
+            display: flex;
+            gap: 20px;
+            justify-content: space-between;
+            margin-top: 40px;
+        }
+        .room-card {
+            background: #fff;
+            flex: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .room-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .room-card h3 {
+            margin: 15px 0 5px 0;
+        }
+        .room-card p {
+            padding: 0 15px 15px 15px;
+            color: #666;
+        }
+
+        /* Pie de página */
+        footer {
+            background-color: #222;
+            color: #aaa;
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: 50px;
+        }
+    </style>
 </head>
 <body>
-    <h1>¡Hola, Mundo!</h1>
-    <p>Esta es mi primera página web alojada en GitHub Pages.</p>
+
+    <!-- Navegación -->
+    <header>
+        <a href="#" class="logo">Oasis Resort</a>
+        <nav>
+            <a href="#">Inicio</a>
+            <a href="#">Habitaciones</a>
+            <a href="#">Experiencias</a>
+            <a href="#">Contacto</a>
+        </nav>
+    </header>
+
+    <!-- Encabezado Principal -->
+    <div class="hero">
+        <h1>Tu Escape en el Paraíso</h1>
+        <p>Descubre el confort y la elegancia frente al mar.</p>
+    </div>
+
+    <!-- Barra de Reservas Simulada -->
+    <div class="booking-bar">
+        <div class="booking-field">
+            <label>Llegada</label>
+            <input type="date">
+        </div>
+        <div class="booking-field">
+            <label>Salida</label>
+            <input type="date">
+        </div>
+        <div class="booking-field">
+            <label>Huéspedes</label>
+            <select>
+                <option>1 Adulto</option>
+                <option selected>2 Adultos</option>
+                <option>2 Adultos, 1 Niño</option>
+            </select>
+        </div>
+        <button class="btn-book">Reservar Ahora</button>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="content">
+        <h2>Un refugio diseñado para ti</h2>
+        <p>Relájate en nuestras instalaciones de primer nivel, disfruta de la gastronomía local y vive experiencias inolvidables en un entorno diseñado para tu total descanso.</p>
+
+        <!-- Habitaciones -->
+        <div class="rooms-grid">
+            <div class="room-card">
+                <img src="https://images.unsplash.com/photo-1611892440504-42a792e24d32?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Habitación Estándar">
+                <h3>Suite Clásica</h3>
+                <p>Comodidad esencial con vistas a nuestros jardines tropicales.</p>
+            </div>
+            <div class="room-card">
+                <img src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Habitación Deluxe">
+                <h3>Suite Frente al Mar</h3>
+                <p>Vistas espectaculares al océano y balcón privado.</p>
+            </div>
+            <div class="room-card">
+                <img src="https://images.unsplash.com/photo-1631049307264-da0ec9d70304?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Suite Presidencial">
+                <h3>Penthouse</h3>
+                <p>La máxima experiencia de lujo con terraza y jacuzzi exclusivo.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pie de Página -->
+    <footer>
+        <p>&copy; 2026 Oasis Resort. Todos los derechos reservados.</p>
+        <p>Baja California Sur, México</p>
+    </footer>
+
 </body>
 </html>
