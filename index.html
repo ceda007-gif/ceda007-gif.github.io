@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hotel Boutique - Los Cabos</title>
+    <title>Cargando Sitio...</title>
     <style>
         /* Estilos generales */
         body, html {
@@ -26,7 +26,7 @@
         .logo {
             font-size: 24px;
             font-weight: bold;
-            color: #d4af37; /* Color dorado */
+            color: #d4af37;
             text-decoration: none;
         }
         nav a {
@@ -41,7 +41,6 @@
 
         /* Imagen principal (Hero) */
         .hero {
-            background-image: url('https://images.unsplash.com/photo-1540541338287-41700207dee6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
             background-size: cover;
             background-position: center;
             height: 60vh;
@@ -51,15 +50,16 @@
             align-items: center;
             color: white;
             text-align: center;
+            transition: background-image 0.5s ease-in-out;
         }
         .hero h1 {
             font-size: 48px;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
         }
         .hero p {
             font-size: 20px;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
         }
 
         /* Barra de Reservas */
@@ -74,6 +74,7 @@
             justify-content: space-between;
             align-items: center;
             position: relative;
+            z-index: 10;
         }
         .booking-field {
             display: flex;
@@ -120,15 +121,20 @@
         .rooms-grid {
             display: flex;
             gap: 20px;
-            justify-content: space-between;
+            justify-content: center;
+            flex-wrap: wrap;
             margin-top: 40px;
         }
         .room-card {
             background: #fff;
-            flex: 1;
+            width: 300px;
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
         .room-card img {
             width: 100%;
@@ -136,93 +142,29 @@
             object-fit: cover;
         }
         .room-card h3 {
-            margin: 15px 0 5px 0;
+            margin: 15px 15px 5px 15px;
+            font-size: 20px;
         }
         .room-card p {
-            padding: 0 15px 15px 15px;
+            padding: 0 15px;
             color: #666;
+            font-size: 14px;
+            flex-grow: 1;
         }
-
-        /* Pie de página */
-        footer {
-            background-color: #222;
-            color: #aaa;
-            text-align: center;
-            padding: 30px 20px;
-            margin-top: 50px;
+        .room-pricing {
+            padding: 15px;
+            background-color: #fff;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-    </style>
-</head>
-<body>
-
-    <!-- Navegación -->
-    <header>
-        <a href="#" class="logo">Oasis Resort</a>
-        <nav>
-            <a href="#">Inicio</a>
-            <a href="#">Habitaciones</a>
-            <a href="#">Experiencias</a>
-            <a href="#">Contacto</a>
-        </nav>
-    </header>
-
-    <!-- Encabezado Principal -->
-    <div class="hero">
-        <h1>Tu Escape en el Paraíso</h1>
-        <p>Descubre el confort y la elegancia frente al mar.</p>
-    </div>
-
-    <!-- Barra de Reservas Simulada -->
-    <div class="booking-bar">
-        <div class="booking-field">
-            <label>Llegada</label>
-            <input type="date">
-        </div>
-        <div class="booking-field">
-            <label>Salida</label>
-            <input type="date">
-        </div>
-        <div class="booking-field">
-            <label>Huéspedes</label>
-            <select>
-                <option>1 Adulto</option>
-                <option selected>2 Adultos</option>
-                <option>2 Adultos, 1 Niño</option>
-            </select>
-        </div>
-        <button class="btn-book">Reservar Ahora</button>
-    </div>
-
-    <!-- Contenido Principal -->
-    <div class="content">
-        <h2>Un refugio diseñado para ti</h2>
-        <p>Relájate en nuestras instalaciones de primer nivel, disfruta de la gastronomía local y vive experiencias inolvidables en un entorno diseñado para tu total descanso.</p>
-
-        <!-- Habitaciones -->
-        <div class="rooms-grid">
-            <div class="room-card">
-                <img src="https://images.unsplash.com/photo-1611892440504-42a792e24d32?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Habitación Estándar">
-                <h3>Suite Clásica</h3>
-                <p>Comodidad esencial con vistas a nuestros jardines tropicales.</p>
-            </div>
-            <div class="room-card">
-                <img src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Habitación Deluxe">
-                <h3>Suite Frente al Mar</h3>
-                <p>Vistas espectaculares al océano y balcón privado.</p>
-            </div>
-            <div class="room-card">
-                <img src="https://images.unsplash.com/photo-1631049307264-da0ec9d70304?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Suite Presidencial">
-                <h3>Penthouse</h3>
-                <p>La máxima experiencia de lujo con terraza y jacuzzi exclusivo.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Pie de Página -->
-    <footer>
-        <p>&copy; 2026 Oasis Resort. Todos los derechos reservados.</p>
-        <p>Baja California Sur, México</p>
-    </footer>
-
-</body>
-</html>
+        .price-amount {
+            font-weight: bold;
+            color: #d4af37;
+            font-size: 18px;
+        }
+        .rate-code {
+            font-size: 11px;
+            color: #777;
+            background: #eee
