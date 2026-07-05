@@ -4,183 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cargando Sitio...</title>
-    <style>
-        /* Estilos generales */
-        body, html {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #333;
-            background-color: #f9f9f9;
-        }
-
-        /* Barra de navegación */
-        header {
-            background-color: #fff;
-            padding: 15px 50px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: #d4af37;
-            text-decoration: none;
-        }
-        nav a {
-            margin-left: 20px;
-            text-decoration: none;
-            color: #555;
-            font-weight: 500;
-        }
-        nav a:hover {
-            color: #d4af37;
-        }
-
-        /* Imagen principal (Hero) */
-        .hero {
-            background-size: cover;
-            background-position: center;
-            height: 60vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            text-align: center;
-            transition: background-image 0.5s ease-in-out;
-        }
-        .hero h1 {
-            font-size: 48px;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
-        }
-        .hero p {
-            font-size: 20px;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
-        }
-
-        /* Barra de Reservas */
-        .booking-bar {
-            background-color: #fff;
-            padding: 20px;
-            margin: -30px auto 40px auto;
-            width: 80%;
-            border-radius: 5px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: relative;
-            z-index: 10;
-        }
-        .booking-field {
-            display: flex;
-            flex-direction: column;
-        }
-        .booking-field label {
-            font-size: 12px;
-            text-transform: uppercase;
-            color: #777;
-            margin-bottom: 5px;
-        }
-        .booking-field input, .booking-field select {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .btn-book {
-            background-color: #d4af37;
-            color: #fff;
-            border: none;
-            padding: 12px 25px;
-            font-size: 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
-        .btn-book:hover {
-            background-color: #b5952f;
-        }
-
-        /* Sección de Contenido */
-        .content {
-            padding: 40px 10%;
-            text-align: center;
-        }
-        .content h2 {
-            font-size: 32px;
-            color: #222;
-            margin-bottom: 20px;
-        }
-        
-        /* Cuadrícula de Habitaciones */
-        .rooms-grid {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 40px;
-        }
-        .room-card {
-            background: #fff;
-            width: 300px;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            text-align: left;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-        .room-card img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-        }
-        .room-card h3 {
-            margin: 15px 15px 5px 15px;
-            font-size: 20px;
-        }
-        .room-card p {
-            padding: 0 15px;
-            color: #666;
-            font-size: 14px;
-            flex-grow: 1;
-        }
-        .room-pricing {
-            padding: 15px;
-            background-color: #fff;
-            border-top: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .price-amount {
-            font-weight: bold;
-            color: #d4af37;
-            font-size: 18px;
-        }
-        .rate-code {
-            font-size: 11px;
-            color: #777;
-            background: #eee;
-            padding: 2px 6px;
-            border-radius: 3px;
-        }
-
-        /* Pie de página */
-        footer {
-            background-color: #222;
-            color: #aaa;
-            text-align: center;
-            padding: 30px 20px;
-            margin-top: 50px;
-        }
-    </style>
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
@@ -201,27 +25,28 @@
     <div class="booking-bar">
         <div class="booking-field">
             <label>Llegada</label>
-            <input type="date">
+            <input type="date" id="search-checkin">
         </div>
         <div class="booking-field">
             <label>Salida</label>
-            <input type="date">
+            <input type="date" id="search-checkout">
         </div>
         <div class="booking-field">
             <label>Huéspedes</label>
-            <select>
-                <option>1 Adulto</option>
-                <option selected>2 Adultos</option>
-                <option>3 Adultos</option>
+            <select id="search-guests">
+                <option value="1">1 Adulto</option>
+                <option value="2" selected>2 Adultos</option>
+                <option value="3">3 Adultos</option>
+                <option value="4">4 Adultos</option>
             </select>
         </div>
-        <button class="btn-book" id="btn-booking-engine">Reservar</button>
+        <button class="btn-book" id="btn-search-availability">Buscar disponibilidad</button>
     </div>
 
     <div class="content" id="habitaciones">
-        <h2>Nuestras Habitaciones y Suites</h2>
-        <div class="rooms-grid" id="rooms-container">
-            </div>
+        <h2 id="rooms-heading">Nuestras Habitaciones y Suites</h2>
+        <p class="rooms-hint" id="rooms-hint"></p>
+        <div class="rooms-grid" id="rooms-container"></div>
     </div>
 
     <footer>
@@ -229,69 +54,57 @@
         <p id="footer-location">Ubicación</p>
     </footer>
 
+    <!-- Modal de reservación -->
+    <div class="modal-overlay" id="booking-modal">
+        <div class="modal-box">
+            <button class="modal-close" id="modal-close-btn">&times;</button>
+
+            <div id="modal-step-form">
+                <h3 id="modal-room-title">Habitación</h3>
+                <div class="modal-summary" id="modal-summary"></div>
+                <form id="guest-form">
+                    <div class="form-group">
+                        <label for="guest-name-input">Nombre completo</label>
+                        <input type="text" id="guest-name-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="guest-email-input">Correo electrónico</label>
+                        <input type="email" id="guest-email-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="guest-phone-input">Teléfono</label>
+                        <input type="tel" id="guest-phone-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="guest-count-input">Número de huéspedes</label>
+                        <input type="number" id="guest-count-input" min="1" max="10" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="guest-notes-input">Notas especiales (opcional)</label>
+                        <textarea id="guest-notes-input" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn-book" id="guest-form-submit">Confirmar reserva</button>
+                </form>
+            </div>
+
+            <div id="modal-step-confirmation" class="hidden">
+                <h3>¡Reservación confirmada!</h3>
+                <div id="confirmation-details"></div>
+                <button class="btn-book" id="confirmation-close-btn">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script>
-        async function loadHotelData() {
-            try {
-                // Llama al archivo data.json que está en el mismo repositorio
-                const response = await fetch('data.json');
-                const data = await response.json();
-
-                // 1. Cargar Configuración General del Hotel
-                document.title = data.hotelSettings.propertyName;
-                document.getElementById('hotel-logo').textContent = data.hotelSettings.propertyName;
-                document.getElementById('footer-hotel-name').textContent = data.hotelSettings.propertyName;
-                document.getElementById('footer-location').textContent = data.hotelSettings.location;
-                
-                // Configurar enlace del motor de reservas si existe
-                const bookBtn = document.getElementById('btn-booking-engine');
-                bookBtn.onclick = () => {
-                    window.location.href = data.hotelSettings.bookingEngineUrl;
-                };
-
-                // 2. Cargar Sección Hero
-                document.getElementById('hero-headline').textContent = data.heroSection.headline;
-                document.getElementById('hero-subheadline').textContent = data.heroSection.subheadline;
-                document.getElementById('hero-section').style.backgroundImage = `url('${data.heroSection.heroImage}')`;
-
-                // 3. Cargar Inventario de Habitaciones Dinámicamente
-                const roomsContainer = document.getElementById('rooms-container');
-                roomsContainer.innerHTML = ''; // Limpiar el contenedor de carga
-
-                data.roomInventory.forEach(room => {
-                    // Filtrar solo las habitaciones que tengan disponibilidad activa
-                    if (room.isAvailable) {
-                        const roomCard = document.createElement('div');
-                        roomCard.className = 'room-card';
-
-                        // Formatear el precio de acuerdo a la moneda del JSON
-                        const formattedPrice = new Intl.NumberFormat('es-MX', {
-                            style: 'currency',
-                            currency: room.pricing.currency
-                        }).format(room.pricing.baseRate);
-
-                        roomCard.innerHTML = `
-                            <img src="${room.imageUrl}" alt="${room.title}">
-                            <div>
-                                <h3>${room.title}</h3>
-                                <p>${room.description}</p>
-                            </div>
-                            <div class="room-pricing">
-                                <span class="price-amount">${formattedPrice} <span style="font-size:12px; font-weight:normal;">${room.pricing.currency}</span></span>
-                                <span class="rate-code">${room.pricing.rateCode}</span>
-                            </div>
-                        `;
-                        roomsContainer.appendChild(roomCard);
-                    }
-                });
-
-            } catch (error) {
-                console.error("Error al cargar la configuración de la página:", error);
-                document.getElementById('hero-headline').textContent = "Error al cargar la información";
-            }
+        if (window.emailjs) {
+            import("./js/firebase-config.js").then(({ emailjsConfig }) => {
+                if (emailjsConfig.publicKey) {
+                    window.emailjs.init({ publicKey: emailjsConfig.publicKey });
+                }
+            });
         }
-
-        // Ejecutar la función cuando la página termine de cargar
-        window.onload = loadHotelData;
     </script>
+    <script type="module" src="js/booking.js"></script>
 </body>
 </html>
