@@ -105,6 +105,151 @@ nav a:hover {
     cursor: not-allowed;
 }
 
+.booking-field-dates {
+    min-width: 220px;
+}
+.booking-dates-summary {
+    font-weight: 600;
+    color: #222;
+    padding: 8px 0;
+}
+
+/* Calendario de tarifas */
+.rate-calendar {
+    background: #fff;
+    width: 80%;
+    margin: 0 auto 40px auto;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.calendar-legend {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 15px;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #d4af37;
+    display: inline-block;
+}
+.legend-swatch {
+    width: 14px;
+    height: 14px;
+    display: inline-block;
+    border-radius: 2px;
+}
+.sold-out-swatch {
+    background: repeating-linear-gradient(45deg, #ddd, #ddd 4px, #f2f2f2 4px, #f2f2f2 8px);
+}
+.calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 15px;
+}
+.calendar-header h3 {
+    margin: 0;
+    min-width: 180px;
+    text-align: center;
+}
+.cal-nav-btn {
+    background: #f2f2f2;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    color: #333;
+}
+.cal-nav-btn:hover {
+    background: #eaeaea;
+}
+.cal-nav-btn:disabled {
+    color: #ccc;
+    cursor: not-allowed;
+}
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: #999;
+    margin-bottom: 8px;
+}
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+}
+.cal-day {
+    aspect-ratio: 1 / 0.85;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    padding: 6px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    cursor: pointer;
+    background: #fff;
+}
+.cal-day .cal-day-number {
+    font-weight: 600;
+    color: #333;
+}
+.cal-day .cal-day-price {
+    font-size: 11px;
+    color: #d4af37;
+    font-weight: 600;
+    margin-top: 2px;
+}
+.cal-day:hover:not(.cal-day-disabled) {
+    border-color: #d4af37;
+}
+.cal-day-empty {
+    visibility: hidden;
+    cursor: default;
+}
+.cal-day-disabled {
+    cursor: not-allowed;
+    background: repeating-linear-gradient(45deg, #f7f7f7, #f7f7f7 6px, #efefef 6px, #efefef 12px);
+    color: #bbb;
+}
+.cal-day-disabled .cal-day-number {
+    color: #bbb;
+}
+.cal-day-disabled .cal-day-price {
+    display: none;
+}
+.cal-day-selected {
+    background: #d4af37;
+    border-color: #d4af37;
+}
+.cal-day-selected .cal-day-number,
+.cal-day-selected .cal-day-price {
+    color: #fff;
+}
+.cal-day-in-range {
+    background: #fbf0d3;
+    border-color: #f0dca0;
+}
+
 /* Sección de Contenido */
 .content {
     padding: 40px 10%;

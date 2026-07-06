@@ -15,7 +15,14 @@ const db = getFirestore(app);
 
 let hotelData = null;
 let selectedRoom = null;
-let searchDates = { checkIn: null, checkOut: null, guests: 1 };
+let occupancyByDate = new Map();
+let calendarViewMonth = null;
+let selection = { checkIn: null, checkOut: null };
+
+const MONTH_NAMES = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+];
 
 const $ = (id) => document.getElementById(id);
 
@@ -43,6 +50,21 @@ function rangesOverlap(startA, endA, startB, endB) {
   return startA < endB && endA > startB;
 }
 
+function rateForRoomOnDate(room, dateStr) {
+  const override = room.pricing.dateOverrides && room.pricing.dateOverrides[dateStr];
+  return override !== undefined ? override : room.pricing.baseRate;
+}
+
+function calculateStayTotal(room, checkIn, checkOut) {
+  let total = 0;
+  let cursor = checkIn;
+  while (cursor < checkOut) {
+    total += rateForRoomOnDate(room, cursor);
+    cursor = addDays(cursor, 1);
+  }
+  return total;
+}
+
 async function loadHotelData() {
   const response = await fetch("data.json");
   hotelData = await response.json();
@@ -55,22 +77,118 @@ async function loadHotelData() {
   $("hero-headline").textContent = hotelData.heroSection.headline;
   $("hero-subheadline").textContent = hotelData.heroSection.subheadline;
   $("hero-section").style.backgroundImage = `url('${hotelData.heroSection.heroImage}')`;
+  $("calendar-currency").textContent = hotelData.hotelSettings.currency || "MXN";
 
-  const checkInInput = $("search-checkin");
-  const checkOutInput = $("search-checkout");
-  checkInInput.min = todayISO();
-  checkInInput.value = todayISO();
-  checkOutInput.min = addDays(todayISO(), 1);
-  checkOutInput.value = addDays(todayISO(), 1);
+  selection = { checkIn: todayISO(), checkOut: addDays(todayISO(), 1) };
+  updateDatesSummary();
 
-  checkInInput.addEventListener("change", () => {
-    checkOutInput.min = addDays(checkInInput.value, 1);
-    if (checkOutInput.value <= checkInInput.value) {
-      checkOutInput.value = addDays(checkInInput.value, 1);
-    }
-  });
+  const today = new Date();
+  calendarViewMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  await buildOccupancyMap();
+  renderCalendar();
 
   renderAllRooms(hotelData.roomInventory);
+}
+
+async function buildOccupancyMap() {
+  occupancyByDate = new Map();
+  const snapshot = await getDocs(collection(db, "reservations"));
+
+  snapshot.forEach((docSnap) => {
+    const data = docSnap.data();
+    if (data.status === "cancelled") return;
+
+    let cursor = data.checkIn;
+    while (cursor < data.checkOut) {
+      if (!occupancyByDate.has(cursor)) {
+        occupancyByDate.set(cursor, new Set());
+      }
+      occupancyByDate.get(cursor).add(data.roomId);
+      cursor = addDays(cursor, 1);
+    }
+  });
+}
+
+function updateDatesSummary() {
+  $("summary-checkin").textContent = selection.checkIn || "--";
+  $("summary-checkout").textContent = selection.checkOut || "--";
+}
+
+function renderCalendar() {
+  $("cal-month-label").textContent = `${MONTH_NAMES[calendarViewMonth.getMonth()]} ${calendarViewMonth.getFullYear()}`;
+
+  const grid = $("calendar-grid");
+  grid.innerHTML = "";
+
+  const year = calendarViewMonth.getFullYear();
+  const month = calendarViewMonth.getMonth();
+  const firstWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = todayISO();
+  const availableRooms = hotelData.roomInventory.filter((room) => room.isAvailable);
+
+  for (let i = 0; i < firstWeekday; i++) {
+    const empty = document.createElement("div");
+    empty.className = "cal-day cal-day-empty";
+    grid.appendChild(empty);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const bookedRoomIds = occupancyByDate.get(dateStr) || new Set();
+    const freeRooms = availableRooms.filter((room) => !bookedRoomIds.has(room.roomId));
+    const isPast = dateStr < today;
+    const soldOut = freeRooms.length === 0;
+
+    const cell = document.createElement("div");
+    cell.className = "cal-day";
+    cell.dataset.date = dateStr;
+
+    if (isPast || soldOut) {
+      cell.classList.add("cal-day-disabled");
+    } else {
+      const lowestRate = Math.min(...freeRooms.map((room) => rateForRoomOnDate(room, dateStr)));
+      cell.addEventListener("click", () => onCalendarDayClick(dateStr));
+
+      if (dateStr === selection.checkIn || dateStr === selection.checkOut) {
+        cell.classList.add("cal-day-selected");
+      } else if (selection.checkIn && selection.checkOut && dateStr > selection.checkIn && dateStr < selection.checkOut) {
+        cell.classList.add("cal-day-in-range");
+      }
+
+      cell.innerHTML = `
+        <span class="cal-day-number">${day}</span>
+        <span class="cal-day-price">${Math.round(lowestRate)}</span>
+      `;
+      grid.appendChild(cell);
+      continue;
+    }
+
+    cell.innerHTML = `<span class="cal-day-number">${day}</span>`;
+    grid.appendChild(cell);
+  }
+
+  const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  $("cal-prev-btn").disabled = calendarViewMonth <= currentMonthStart;
+}
+
+function onCalendarDayClick(dateStr) {
+  if (!selection.checkIn || (selection.checkIn && selection.checkOut)) {
+    selection = { checkIn: dateStr, checkOut: null };
+  } else if (dateStr > selection.checkIn) {
+    selection.checkOut = dateStr;
+  } else {
+    selection = { checkIn: dateStr, checkOut: null };
+  }
+
+  updateDatesSummary();
+  renderCalendar();
+}
+
+function navigateMonth(offset) {
+  calendarViewMonth = new Date(calendarViewMonth.getFullYear(), calendarViewMonth.getMonth() + offset, 1);
+  renderCalendar();
 }
 
 function renderAllRooms(rooms) {
@@ -136,16 +254,14 @@ async function isRoomAvailable(roomId, checkIn, checkOut) {
 }
 
 async function searchAvailability() {
-  const checkIn = $("search-checkin").value;
-  const checkOut = $("search-checkout").value;
+  const checkIn = selection.checkIn;
+  const checkOut = selection.checkOut;
   const guests = parseInt($("search-guests").value, 10);
 
   if (!checkIn || !checkOut || checkOut <= checkIn) {
-    alert("Selecciona fechas de llegada y salida válidas.");
+    alert("Selecciona tus fechas de llegada y salida en el calendario.");
     return;
   }
-
-  searchDates = { checkIn, checkOut, guests };
 
   const container = $("rooms-container");
   const nights = nightsBetween(checkIn, checkOut);
@@ -180,7 +296,7 @@ async function searchAvailability() {
 function openBookingModal(room, availability) {
   selectedRoom = { room, availability };
 
-  const total = room.pricing.baseRate * availability.nights;
+  const total = calculateStayTotal(room, availability.checkIn, availability.checkOut);
   $("modal-room-title").textContent = room.title;
   $("modal-summary").innerHTML = `
     <p><strong>Llegada:</strong> ${availability.checkIn}</p>
@@ -216,11 +332,13 @@ async function submitReservation(event) {
     if (!stillAvailable) {
       alert("Lo sentimos, esta habitación acaba de ser reservada por otro huésped para esas fechas. Elige otra habitación u otras fechas.");
       closeBookingModal();
+      await buildOccupancyMap();
+      renderCalendar();
       searchAvailability();
       return;
     }
 
-    const total = room.pricing.baseRate * availability.nights;
+    const total = calculateStayTotal(room, availability.checkIn, availability.checkOut);
     const reservation = {
       roomId: room.roomId,
       roomTitle: room.title,
@@ -241,6 +359,8 @@ async function submitReservation(event) {
     const docRef = await addDoc(collection(db, "reservations"), reservation);
 
     await sendConfirmationEmail(reservation, docRef.id);
+    await buildOccupancyMap();
+    renderCalendar();
 
     $("modal-step-form").classList.add("hidden");
     $("modal-step-confirmation").classList.remove("hidden");
@@ -287,6 +407,8 @@ function init() {
   $("guest-form").addEventListener("submit", submitReservation);
   $("modal-close-btn").addEventListener("click", closeBookingModal);
   $("confirmation-close-btn").addEventListener("click", closeBookingModal);
+  $("cal-prev-btn").addEventListener("click", () => navigateMonth(-1));
+  $("cal-next-btn").addEventListener("click", () => navigateMonth(1));
 }
 
 document.addEventListener("DOMContentLoaded", init);
