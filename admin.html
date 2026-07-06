@@ -28,29 +28,63 @@
 
     <div id="dashboard-screen" class="admin-page hidden">
         <div class="admin-header">
-            <h2>Reservaciones (<span id="admin-email-label"></span>)</h2>
+            <h2>Panel de administración (<span id="admin-email-label"></span>)</h2>
             <div class="actions">
-                <button class="btn-secondary" id="refresh-btn">Actualizar</button>
                 <button class="btn-secondary" id="logout-btn">Cerrar sesión</button>
             </div>
         </div>
-        <div class="reservations-table-wrap">
-            <table class="reservations-table">
-                <thead>
-                    <tr>
-                        <th>Folio</th>
-                        <th>Habitación</th>
-                        <th>Llegada</th>
-                        <th>Salida</th>
-                        <th>Huéspedes</th>
-                        <th>Huésped</th>
-                        <th>Total</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="reservations-tbody"></tbody>
-            </table>
+
+        <div class="admin-tabs">
+            <button class="admin-tab active" id="tab-btn-reservations">Reservaciones</button>
+            <button class="admin-tab" id="tab-btn-rates">Tarifas y Habitaciones</button>
+        </div>
+
+        <div id="tab-reservations">
+            <div class="admin-header">
+                <div></div>
+                <div class="actions">
+                    <button class="btn-secondary" id="refresh-btn">Actualizar</button>
+                </div>
+            </div>
+            <div class="reservations-table-wrap">
+                <table class="reservations-table">
+                    <thead>
+                        <tr>
+                            <th>Folio</th>
+                            <th>Habitación</th>
+                            <th>Llegada</th>
+                            <th>Salida</th>
+                            <th>Huéspedes</th>
+                            <th>Huésped</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reservations-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-rates" class="hidden">
+            <div class="rates-token-box">
+                <p>Para guardar cambios de tarifas se necesita un <strong>token de GitHub</strong> con permiso de escritura sobre este repositorio (crea uno "fine-grained" limitado solo a <code>ceda007-gif.github.io</code> con permiso <em>Contents: Read and write</em> en <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a>). El token solo se guarda en la memoria de esta pestaña, nunca en el código.</p>
+                <div class="form-group">
+                    <label for="github-token-input">Token de GitHub</label>
+                    <input type="password" id="github-token-input" placeholder="github_pat_...">
+                </div>
+                <button class="btn-secondary" id="load-rates-btn">Cargar tarifas</button>
+                <p class="login-error" id="rates-status"></p>
+            </div>
+
+            <div id="rates-editor" class="hidden">
+                <div id="rooms-editor-list"></div>
+                <button class="btn-secondary" id="add-room-btn">+ Agregar habitación</button>
+                <div class="admin-header">
+                    <div></div>
+                    <button class="btn-book" id="save-rates-btn">Guardar cambios en GitHub</button>
+                </div>
+            </div>
         </div>
     </div>
 

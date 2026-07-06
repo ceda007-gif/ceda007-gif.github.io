@@ -45,3 +45,14 @@ export const emailjsConfig = {
   templateId: "TU_TEMPLATE_ID",
   publicKey: ""
 };
+
+// Repositorio de GitHub donde vive data.json, usado por el panel de admin
+// para guardar cambios de tarifas/habitaciones directamente como un commit.
+// No requiere ninguna clave aquí: el admin pega su propio token de GitHub
+// en el panel (ver sección "Tarifas y Habitaciones" de admin.html).
+export const githubRepoConfig = {
+  owner: "ceda007-gif",
+  repo: "ceda007-gif.github.io",
+  branch: "main",
+  dataPath: "data.json"
+};
