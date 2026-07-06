@@ -2,7 +2,9 @@
   "hotelSettings": {
     "propertyName": "Tropicana Los Cabos, Tapestry Collection by Hilton",
     "location": "Baja California Sur, México",
-    "bookingEngineUrl": "https://reservas.tu-hotel.com"
+    "currency": "MXN",
+    "checkInTime": "15:00",
+    "checkOutTime": "12:00"
   },
   "heroSection": {
     "headline": "Tu Escape en el Paraíso",
@@ -20,6 +22,7 @@
         "currency": "MXN",
         "rateCode": "BAR"
       },
+      "maxGuests": 3,
       "features": [
         "Cama King",
         "Wi-Fi de alta velocidad",
@@ -37,6 +40,7 @@
         "currency": "MXN",
         "rateCode": "BAR"
       },
+      "maxGuests": 4,
       "features": [
         "Vista al mar",
         "Tina de hidromasaje",

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Reservaciones</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <div id="login-screen" class="admin-page">
+        <div class="login-box">
+            <h2>Acceso de administrador</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Correo electrónico</label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Contraseña</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <p class="login-error" id="login-error"></p>
+                <button type="submit" class="btn-book">Entrar</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="dashboard-screen" class="admin-page hidden">
+        <div class="admin-header">
+            <h2>Reservaciones (<span id="admin-email-label"></span>)</h2>
+            <div class="actions">
+                <button class="btn-secondary" id="refresh-btn">Actualizar</button>
+                <button class="btn-secondary" id="logout-btn">Cerrar sesión</button>
+            </div>
+        </div>
+        <div class="reservations-table-wrap">
+            <table class="reservations-table">
+                <thead>
+                    <tr>
+                        <th>Folio</th>
+                        <th>Habitación</th>
+                        <th>Llegada</th>
+                        <th>Salida</th>
+                        <th>Huéspedes</th>
+                        <th>Huésped</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="reservations-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module" src="js/admin.js"></script>
+</body>
+</html>
