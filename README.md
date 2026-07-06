@@ -95,6 +95,35 @@ guarda en el código ni en Firestore) — tendrás que pegarlo de nuevo cada
 vez que quieras editar tarifas. Guárdalo en un lugar seguro y no lo
 compartas: quien lo tenga puede escribir en este repositorio.
 
+### 4.2 Calendario de tarifas para el huésped
+
+En vez de simples campos de fecha, `index.html` muestra un calendario
+mensual donde cada día visible indica la tarifa más baja disponible ese
+día (calculada entre todas las habitaciones libres esa noche) y navega
+mes a mes. Los días donde **todas** las habitaciones ya están reservadas
+se muestran tachados y no se pueden seleccionar. El huésped hace clic en
+un día para marcar la llegada y en otro día posterior para la salida.
+
+Por defecto todas las noches usan la tarifa base de cada habitación
+(`pricing.baseRate` en `data.json`). Si quieres precios distintos para
+fechas específicas (temporada alta, fines de semana, etc.), agrega un
+objeto `dateOverrides` dentro de `pricing` de la habitación en
+`data.json`, con el formato `"YYYY-MM-DD": tarifa`, por ejemplo:
+
+```json
+"pricing": {
+  "baseRate": 3500,
+  "currency": "MXN",
+  "rateCode": "BAR",
+  "dateOverrides": {
+    "2026-12-24": 4800,
+    "2026-12-31": 5200
+  }
+}
+```
+
+Cualquier fecha sin entrada en `dateOverrides` usa `baseRate` normalmente.
+
 ### 5. Publicar
 
 Con GitHub Pages, basta con hacer push a la rama publicada como sitio
