@@ -69,7 +69,31 @@ normalmente en Firestore).
 ### 4. Editar el contenido del hotel
 
 Todo el contenido visible (nombre, imágenes, habitaciones, precios) está
-en `data.json`. Edítalo directamente, no requiere tocar el código.
+en `data.json`. Puedes editarlo directamente en el repositorio, o usar la
+pestaña **"Tarifas y Habitaciones"** dentro de `admin.html` (ver siguiente
+sección).
+
+### 4.1 Editar tarifas desde el panel admin
+
+La pestaña "Tarifas y Habitaciones" de `admin.html` permite agregar,
+editar o eliminar habitaciones y precios sin tocar código. Como este es un
+sitio estático (sin servidor propio), guarda los cambios haciendo un
+commit a `data.json` directamente vía la API de GitHub, usando un token
+que tú generas:
+
+1. Ve a https://github.com/settings/personal-access-tokens/new
+2. Crea un token **"Fine-grained"** limitado solo al repositorio
+   `ceda007-gif.github.io` (no a toda tu cuenta), con permiso
+   **Repository permissions → Contents: Read and write**.
+3. En `admin.html`, pestaña "Tarifas y Habitaciones", pega el token y
+   presiona "Cargar tarifas".
+4. Edita lo que necesites y presiona "Guardar cambios en GitHub". Esto
+   crea un commit directo a `main`; GitHub Pages lo publica en ~1 minuto.
+
+El token solo vive en la memoria de esa pestaña del navegador (nunca se
+guarda en el código ni en Firestore) — tendrás que pegarlo de nuevo cada
+vez que quieras editar tarifas. Guárdalo en un lugar seguro y no lo
+compartas: quien lo tenga puede escribir en este repositorio.
 
 ### 5. Publicar
 
