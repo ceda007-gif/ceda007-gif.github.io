@@ -6,16 +6,22 @@ rules_version = '2';
 // Modelo de datos:
 // - hotels/{hotelId}                 datos generales del hotel (público, solo lectura)
 // - hotels/{hotelId}/rooms/{roomId}   habitaciones y tarifas de ese hotel (público, solo lectura)
-// - reservations/{reservationId}     reservaciones de todos los hoteles, cada una con un campo hotelId
+// - reservations/{reservationId}     datos completos de cada reservación, incluyendo datos
+//                                     personales del huésped (nombre, correo, teléfono, notas).
+//                                     Solo lectura/edición de administradores de ese hotel.
+// - availability/{reservationId}     copia PÚBLICA y sin datos personales de cada reservación
+//                                     (hotelId, roomId, checkIn, checkOut, status), usada por el
+//                                     calendario de disponibilidad del sitio para huéspedes. Usa
+//                                     el mismo ID de documento que su reservación correspondiente.
 // - adminUsers/{uid}                 rol de cada cuenta de administrador:
 //                                       { role: "superadmin" }  -> ve y administra TODOS los hoteles
 //                                       { role: "hotel_admin", hotelId: "..." } -> solo ESE hotel
 //
 // Lógica:
-// - Cualquiera puede leer la info pública de hoteles/habitaciones y crear una
-//   reservación (para que el sitio de reservas funcione sin login).
-// - Solo un administrador autenticado puede leer/editar reservaciones y
-//   habitaciones, y solo las de su propio hotel (o todas, si es superadmin).
+// - Cualquiera puede leer la info pública de hoteles/habitaciones/disponibilidad, y crear una
+//   reservación + su registro de disponibilidad (para que el sitio de reservas funcione sin login).
+// - Solo un administrador autenticado puede leer los datos personales de una reservación, y solo
+//   las de su propio hotel (o todas, si es superadmin).
 // - Solo un superadmin puede crear hoteles nuevos o asignar administradores.
 
 service cloud.firestore {
@@ -62,6 +68,21 @@ service cloud.firestore {
         && request.resource.data.guestEmail is string
         && request.resource.data.totalPrice is number
         && request.resource.data.totalPrice > 0;
+
+      allow update, delete: if isSuperadmin() || isHotelAdmin(resource.data.hotelId);
+    }
+
+    match /availability/{reservationId} {
+      allow read: if true;
+
+      allow create: if request.resource.data.keys().hasAll([
+          'hotelId', 'roomId', 'checkIn', 'checkOut', 'status'
+        ])
+        && request.resource.data.status == 'confirmed'
+        && request.resource.data.hotelId is string
+        && request.resource.data.checkIn is string
+        && request.resource.data.checkOut is string
+        && request.resource.data.checkOut > request.resource.data.checkIn;
 
       allow update, delete: if isSuperadmin() || isHotelAdmin(resource.data.hotelId);
     }

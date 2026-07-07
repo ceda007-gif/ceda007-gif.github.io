@@ -40,8 +40,16 @@ build), pensado para hospedarse en GitHub Pages.
   moneda, imagen principal, etc.). `hotelId` es el mismo identificador que
   aparece en la URL (`/hotel/{hotelId}`).
 - `hotels/{hotelId}/rooms/{roomId}` — habitaciones y tarifas de ese hotel.
-- `reservations/{reservationId}` — reservaciones de **todos** los
-  hoteles; cada una tiene un campo `hotelId` que indica a cuál pertenece.
+- `reservations/{reservationId}` — datos completos de cada reservación,
+  incluyendo datos personales del huésped (nombre, correo, teléfono,
+  notas); solo lectura/edición de administradores del hotel al que
+  pertenece (campo `hotelId`).
+- `availability/{reservationId}` — copia **pública** y sin datos
+  personales de cada reservación (`hotelId`, `roomId`, `checkIn`,
+  `checkOut`, `status`), con el mismo ID que su reservación
+  correspondiente. El calendario de disponibilidad del sitio la usa para
+  saber qué noches están ocupadas, sin que un visitante anónimo pueda leer
+  nombres/correos de otros huéspedes.
 - `adminUsers/{uid}` — el rol de cada cuenta de administrador:
   `{ role: "superadmin" }` o `{ role: "hotel_admin", hotelId: "..." }`.
 
@@ -71,6 +79,12 @@ requieren tarjeta de crédito para este uso.
 2. Copia el contenido de `firestore.rules` (en la raíz de este repo) y
    pégalo, reemplazando lo que había.
 3. Presiona **Publicar**.
+
+Si ya habías publicado una versión anterior de estas reglas (antes de que
+existiera la colección `availability`), vuelve a hacer este paso: sin
+ella, el calendario de disponibilidad del sitio fallará con
+"Missing or insufficient permissions" para cualquier visitante que no
+haya iniciado sesión.
 
 ### 3. Volverte super-administrador (paso único)
 

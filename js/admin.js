@@ -108,6 +108,7 @@ async function loadReservations() {
   tbody.querySelectorAll(".btn-cancel").forEach((btn) => {
     btn.addEventListener("click", async () => {
       await updateDoc(doc(db, "reservations", btn.dataset.id), { status: "cancelled" });
+      await setDoc(doc(db, "availability", btn.dataset.id), { status: "cancelled" }, { merge: true });
       loadReservations();
     });
   });
@@ -116,6 +117,7 @@ async function loadReservations() {
     btn.addEventListener("click", async () => {
       if (confirm("¿Eliminar esta reservación permanentemente?")) {
         await deleteDoc(doc(db, "reservations", btn.dataset.id));
+        await deleteDoc(doc(db, "availability", btn.dataset.id));
         loadReservations();
       }
     });
@@ -376,8 +378,16 @@ async function importFromDataJson() {
     const reservationsSnapshot = await getDocs(collection(db, "reservations"));
     let tagged = 0;
     for (const reservationDoc of reservationsSnapshot.docs) {
-      if (!reservationDoc.data().hotelId) {
+      const existing = reservationDoc.data();
+      if (!existing.hotelId) {
         await updateDoc(doc(db, "reservations", reservationDoc.id), { hotelId });
+        await setDoc(doc(db, "availability", reservationDoc.id), {
+          hotelId,
+          roomId: existing.roomId,
+          checkIn: existing.checkIn,
+          checkOut: existing.checkOut,
+          status: existing.status || "confirmed"
+        });
         tagged++;
       }
     }

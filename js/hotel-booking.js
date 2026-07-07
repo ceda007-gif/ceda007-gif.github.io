@@ -3,6 +3,7 @@ import {
   getFirestore,
   doc,
   getDoc,
+  setDoc,
   collection,
   getDocs,
   query,
@@ -127,7 +128,7 @@ async function loadHotelData() {
 
 async function buildOccupancyMap() {
   occupancyByDate = new Map();
-  const q = query(collection(db, "reservations"), where("hotelId", "==", hotelId));
+  const q = query(collection(db, "availability"), where("hotelId", "==", hotelId));
   const snapshot = await getDocs(q);
 
   snapshot.forEach((docSnap) => {
@@ -275,7 +276,7 @@ function buildRoomCard(room, availability) {
 
 async function isRoomAvailable(roomId, checkIn, checkOut) {
   const q = query(
-    collection(db, "reservations"),
+    collection(db, "availability"),
     where("hotelId", "==", hotelId),
     where("roomId", "==", roomId)
   );
@@ -396,6 +397,13 @@ async function submitReservation(event) {
     };
 
     const docRef = await addDoc(collection(db, "reservations"), reservation);
+    await setDoc(doc(db, "availability", docRef.id), {
+      hotelId,
+      roomId: room.roomId,
+      checkIn: availability.checkIn,
+      checkOut: availability.checkOut,
+      status: "confirmed"
+    });
 
     await sendConfirmationEmail(reservation, docRef.id);
     await buildOccupancyMap();
