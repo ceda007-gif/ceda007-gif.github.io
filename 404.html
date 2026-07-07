@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cargando Hotel...</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+    <header>
+        <a href="/" class="logo" id="hotel-logo">Cargando...</a>
+        <nav>
+            <a href="/">Todos los hoteles</a>
+            <a href="#habitaciones">Habitaciones</a>
+        </nav>
+    </header>
+
+    <div class="hero" id="hero-section">
+        <h1 id="hero-headline">Cargando...</h1>
+        <p id="hero-subheadline">Por favor espera un momento.</p>
+    </div>
+
+    <div class="booking-bar">
+        <div class="booking-field booking-field-dates">
+            <label>Fechas</label>
+            <div class="booking-dates-summary">
+                <span id="summary-checkin">--</span> &rarr; <span id="summary-checkout">--</span>
+            </div>
+        </div>
+        <div class="booking-field">
+            <label>Huéspedes</label>
+            <select id="search-guests">
+                <option value="1">1 Adulto</option>
+                <option value="2" selected>2 Adultos</option>
+                <option value="3">3 Adultos</option>
+                <option value="4">4 Adultos</option>
+            </select>
+        </div>
+        <button class="btn-book" id="btn-search-availability">Buscar disponibilidad</button>
+    </div>
+
+    <div class="rate-calendar">
+        <div class="calendar-legend">
+            Precios por noche en <strong id="calendar-currency">MXN</strong>
+            <span class="legend-item"><span class="legend-dot"></span> Tarifa más baja disponible</span>
+            <span class="legend-item"><span class="legend-swatch sold-out-swatch"></span> No disponible</span>
+        </div>
+        <div class="calendar-header">
+            <button type="button" class="cal-nav-btn" id="cal-prev-btn" aria-label="Mes anterior">&lsaquo;</button>
+            <h3 id="cal-month-label">Mes</h3>
+            <button type="button" class="cal-nav-btn" id="cal-next-btn" aria-label="Mes siguiente">&rsaquo;</button>
+        </div>
+        <div class="calendar-weekdays">
+            <span>Dom</span><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span>
+        </div>
+        <div class="calendar-grid" id="calendar-grid"></div>
+    </div>
+
+    <div class="content" id="habitaciones">
+        <h2 id="rooms-heading">Nuestras Habitaciones y Suites</h2>
+        <p class="rooms-hint" id="rooms-hint"></p>
+        <div class="rooms-grid" id="rooms-container"></div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 <span id="footer-hotel-name">Resort</span>. Todos los derechos reservados.</p>
+        <p id="footer-location">Ubicación</p>
+    </footer>
+
+    <!-- Modal de reservación -->
+    <div class="modal-overlay" id="booking-modal">
+        <div class="modal-box">
+            <button class="modal-close" id="modal-close-btn">&times;</button>
+
+            <div id="modal-step-form">
+                <h3 id="modal-room-title">Habitación</h3>
+                <div class="modal-summary" id="modal-summary"></div>
+                <form id="guest-form">
+                    <div class="form-group">
+                        <label for="guest-name-input">Nombre completo</label>
+                        <input type="text" id="guest-name-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="guest-email-input">Correo electrónico</label>
+                        <input type="email" id="guest-email-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="guest-phone-input">Teléfono</label>
+                        <input type="tel" id="guest-phone-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="guest-count-input">Número de huéspedes</label>
+                        <input type="number" id="guest-count-input" min="1" max="10" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="guest-notes-input">Notas especiales (opcional)</label>
+                        <textarea id="guest-notes-input" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn-book" id="guest-form-submit">Confirmar reserva</button>
+                </form>
+            </div>
+
+            <div id="modal-step-confirmation" class="hidden">
+                <h3>¡Reservación confirmada!</h3>
+                <div id="confirmation-details"></div>
+                <button class="btn-book" id="confirmation-close-btn">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script>
+        if (window.emailjs) {
+            import("/js/firebase-config.js").then(({ emailjsConfig }) => {
+                if (emailjsConfig.publicKey) {
+                    window.emailjs.init({ publicKey: emailjsConfig.publicKey });
+                }
+            });
+        }
+    </script>
+    <script type="module" src="/js/hotel-booking.js"></script>
+</body>
+</html>

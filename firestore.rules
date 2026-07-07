@@ -1,25 +1,60 @@
 rules_version = '2';
 
-// Reglas de seguridad para el motor de reservaciones.
+// Reglas de seguridad para el motor de reservaciones multi-hotel.
 // Cópialas en Firebase Console > Firestore Database > Reglas, y publica.
 //
+// Modelo de datos:
+// - hotels/{hotelId}                 datos generales del hotel (público, solo lectura)
+// - hotels/{hotelId}/rooms/{roomId}   habitaciones y tarifas de ese hotel (público, solo lectura)
+// - reservations/{reservationId}     reservaciones de todos los hoteles, cada una con un campo hotelId
+// - adminUsers/{uid}                 rol de cada cuenta de administrador:
+//                                       { role: "superadmin" }  -> ve y administra TODOS los hoteles
+//                                       { role: "hotel_admin", hotelId: "..." } -> solo ESE hotel
+//
 // Lógica:
-// - Cualquier visitante puede CREAR una reservación (con validación básica
-//   de los campos requeridos), para que el flujo público de reservas funcione.
-// - Solo un usuario autenticado (el administrador que creaste en
-//   Authentication) puede LEER, ACTUALIZAR o BORRAR reservaciones, para que
-//   nadie pueda ver o modificar los datos de otros huéspedes.
+// - Cualquiera puede leer la info pública de hoteles/habitaciones y crear una
+//   reservación (para que el sitio de reservas funcione sin login).
+// - Solo un administrador autenticado puede leer/editar reservaciones y
+//   habitaciones, y solo las de su propio hotel (o todas, si es superadmin).
+// - Solo un superadmin puede crear hoteles nuevos o asignar administradores.
+
+function adminData() {
+  return get(/databases/$(database)/documents/adminUsers/$(request.auth.uid)).data;
+}
+
+function isSuperadmin() {
+  return request.auth != null && adminData().role == 'superadmin';
+}
+
+function isHotelAdmin(hotelId) {
+  return request.auth != null
+    && adminData().role == 'hotel_admin'
+    && adminData().hotelId == hotelId;
+}
+
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    match /hotels/{hotelId} {
+      allow read: if true;
+      allow create, update, delete: if isSuperadmin();
+
+      match /rooms/{roomId} {
+        allow read: if true;
+        allow write: if isSuperadmin() || isHotelAdmin(hotelId);
+      }
+    }
+
     match /reservations/{reservationId} {
-      allow read: if request.auth != null;
+      allow read: if isSuperadmin() || isHotelAdmin(resource.data.hotelId);
 
       allow create: if request.resource.data.keys().hasAll([
-          'roomId', 'roomTitle', 'checkIn', 'checkOut', 'nights',
+          'hotelId', 'roomId', 'roomTitle', 'checkIn', 'checkOut', 'nights',
           'guests', 'totalPrice', 'currency', 'guestName', 'guestEmail',
           'guestPhone', 'status'
         ])
         && request.resource.data.status == 'confirmed'
+        && request.resource.data.hotelId is string
         && request.resource.data.checkIn is string
         && request.resource.data.checkOut is string
         && request.resource.data.checkOut > request.resource.data.checkIn
@@ -28,7 +63,12 @@ service cloud.firestore {
         && request.resource.data.totalPrice is number
         && request.resource.data.totalPrice > 0;
 
-      allow update, delete: if request.auth != null;
+      allow update, delete: if isSuperadmin() || isHotelAdmin(resource.data.hotelId);
+    }
+
+    match /adminUsers/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isSuperadmin());
+      allow write: if isSuperadmin();
     }
   }
 }
