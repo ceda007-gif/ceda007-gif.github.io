@@ -1,11 +1,13 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore,
+  doc,
+  getDoc,
   collection,
-  addDoc,
   getDocs,
   query,
   where,
+  addDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig, emailjsConfig } from "./firebase-config.js";
@@ -13,7 +15,9 @@ import { firebaseConfig, emailjsConfig } from "./firebase-config.js";
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+let hotelId = null;
 let hotelData = null;
+let rooms = [];
 let selectedRoom = null;
 let occupancyByDate = new Map();
 let calendarViewMonth = null;
@@ -25,6 +29,13 @@ const MONTH_NAMES = [
 ];
 
 const $ = (id) => document.getElementById(id);
+
+function getHotelIdFromPath() {
+  const segments = window.location.pathname.split("/").filter(Boolean);
+  const hotelIndex = segments.indexOf("hotel");
+  if (hotelIndex === -1 || !segments[hotelIndex + 1]) return null;
+  return decodeURIComponent(segments[hotelIndex + 1]);
+}
 
 function todayISO() {
   return new Date().toISOString().split("T")[0];
@@ -51,8 +62,8 @@ function rangesOverlap(startA, endA, startB, endB) {
 }
 
 function rateForRoomOnDate(room, dateStr) {
-  const override = room.pricing.dateOverrides && room.pricing.dateOverrides[dateStr];
-  return override !== undefined ? override : room.pricing.baseRate;
+  const override = room.dateOverrides && room.dateOverrides[dateStr];
+  return override !== undefined ? override : room.baseRate;
 }
 
 function calculateStayTotal(room, checkIn, checkOut) {
@@ -65,19 +76,42 @@ function calculateStayTotal(room, checkIn, checkOut) {
   return total;
 }
 
+function showHotelNotFound() {
+  document.body.innerHTML = `
+    <div class="content">
+      <h2>Hotel no encontrado</h2>
+      <p class="rooms-hint">No existe ningún hotel publicado en esta dirección. Verifica el enlace.</p>
+      <p><a href="/">Ver todos los hoteles</a></p>
+    </div>
+  `;
+}
+
 async function loadHotelData() {
-  const response = await fetch("data.json");
-  hotelData = await response.json();
+  hotelId = getHotelIdFromPath();
+  if (!hotelId) {
+    showHotelNotFound();
+    return;
+  }
 
-  document.title = hotelData.hotelSettings.propertyName;
-  $("hotel-logo").textContent = hotelData.hotelSettings.propertyName;
-  $("footer-hotel-name").textContent = hotelData.hotelSettings.propertyName;
-  $("footer-location").textContent = hotelData.hotelSettings.location;
+  const hotelSnap = await getDoc(doc(db, "hotels", hotelId));
+  if (!hotelSnap.exists()) {
+    showHotelNotFound();
+    return;
+  }
+  hotelData = hotelSnap.data();
 
-  $("hero-headline").textContent = hotelData.heroSection.headline;
-  $("hero-subheadline").textContent = hotelData.heroSection.subheadline;
-  $("hero-section").style.backgroundImage = `url('${hotelData.heroSection.heroImage}')`;
-  $("calendar-currency").textContent = hotelData.hotelSettings.currency || "MXN";
+  const roomsSnap = await getDocs(collection(db, "hotels", hotelId, "rooms"));
+  rooms = roomsSnap.docs.map((roomDoc) => ({ roomId: roomDoc.id, ...roomDoc.data() }));
+
+  document.title = hotelData.propertyName;
+  $("hotel-logo").textContent = hotelData.propertyName;
+  $("footer-hotel-name").textContent = hotelData.propertyName;
+  $("footer-location").textContent = hotelData.location;
+
+  $("hero-headline").textContent = hotelData.heroHeadline;
+  $("hero-subheadline").textContent = hotelData.heroSubheadline;
+  $("hero-section").style.backgroundImage = `url('${hotelData.heroImage}')`;
+  $("calendar-currency").textContent = hotelData.currency || "MXN";
 
   selection = { checkIn: todayISO(), checkOut: addDays(todayISO(), 1) };
   updateDatesSummary();
@@ -88,12 +122,13 @@ async function loadHotelData() {
   await buildOccupancyMap();
   renderCalendar();
 
-  renderAllRooms(hotelData.roomInventory);
+  renderAllRooms(rooms);
 }
 
 async function buildOccupancyMap() {
   occupancyByDate = new Map();
-  const snapshot = await getDocs(collection(db, "reservations"));
+  const q = query(collection(db, "reservations"), where("hotelId", "==", hotelId));
+  const snapshot = await getDocs(q);
 
   snapshot.forEach((docSnap) => {
     const data = docSnap.data();
@@ -126,7 +161,7 @@ function renderCalendar() {
   const firstWeekday = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const today = todayISO();
-  const availableRooms = hotelData.roomInventory.filter((room) => room.isAvailable);
+  const availableRooms = rooms.filter((room) => room.isAvailable);
 
   for (let i = 0; i < firstWeekday; i++) {
     const empty = document.createElement("div");
@@ -191,13 +226,13 @@ function navigateMonth(offset) {
   renderCalendar();
 }
 
-function renderAllRooms(rooms) {
+function renderAllRooms(roomList) {
   const container = $("rooms-container");
   container.innerHTML = "";
   $("rooms-heading").textContent = "Nuestras Habitaciones y Suites";
   $("rooms-hint").textContent = "Elige tus fechas y número de huéspedes arriba, luego presiona \"Buscar disponibilidad\".";
 
-  rooms
+  roomList
     .filter((room) => room.isAvailable)
     .forEach((room) => container.appendChild(buildRoomCard(room, null)));
 }
@@ -206,7 +241,7 @@ function buildRoomCard(room, availability) {
   const card = document.createElement("div");
   card.className = "room-card";
 
-  const formattedPrice = formatMoney(room.pricing.baseRate, room.pricing.currency);
+  const formattedPrice = formatMoney(room.baseRate, room.currency);
 
   const actionHtml =
     availability === null
@@ -220,11 +255,11 @@ function buildRoomCard(room, availability) {
     <div>
       <h3>${room.title}</h3>
       <p>${room.description}</p>
-      <p class="room-features">${room.features.join(" · ")}</p>
+      <p class="room-features">${(room.features || []).join(" · ")}</p>
     </div>
     <div class="room-pricing">
-      <span class="price-amount">${formattedPrice} <span style="font-size:12px; font-weight:normal;">/ noche ${room.pricing.currency}</span></span>
-      <span class="rate-code">${room.pricing.rateCode}</span>
+      <span class="price-amount">${formattedPrice} <span style="font-size:12px; font-weight:normal;">/ noche ${room.currency}</span></span>
+      <span class="rate-code">${room.rateCode}</span>
     </div>
     <div class="room-action">${actionHtml}</div>
   `;
@@ -239,12 +274,15 @@ function buildRoomCard(room, availability) {
 }
 
 async function isRoomAvailable(roomId, checkIn, checkOut) {
-  const reservationsRef = collection(db, "reservations");
-  const q = query(reservationsRef, where("roomId", "==", roomId));
+  const q = query(
+    collection(db, "reservations"),
+    where("hotelId", "==", hotelId),
+    where("roomId", "==", roomId)
+  );
   const snapshot = await getDocs(q);
 
-  for (const doc of snapshot.docs) {
-    const data = doc.data();
+  for (const docSnap of snapshot.docs) {
+    const data = docSnap.data();
     if (data.status === "cancelled") continue;
     if (rangesOverlap(checkIn, checkOut, data.checkIn, data.checkOut)) {
       return false;
@@ -269,7 +307,7 @@ async function searchAvailability() {
   $("rooms-hint").textContent = "Verificando disponibilidad...";
   container.innerHTML = "";
 
-  const candidateRooms = hotelData.roomInventory.filter(
+  const candidateRooms = rooms.filter(
     (room) => room.isAvailable && (!room.maxGuests || room.maxGuests >= guests)
   );
 
@@ -303,7 +341,7 @@ function openBookingModal(room, availability) {
     <p><strong>Salida:</strong> ${availability.checkOut}</p>
     <p><strong>Noches:</strong> ${availability.nights}</p>
     <p><strong>Huéspedes:</strong> ${availability.guests}</p>
-    <p><strong>Total:</strong> ${formatMoney(total, room.pricing.currency)}</p>
+    <p><strong>Total:</strong> ${formatMoney(total, room.currency)}</p>
   `;
 
   $("guest-form").reset();
@@ -340,6 +378,7 @@ async function submitReservation(event) {
 
     const total = calculateStayTotal(room, availability.checkIn, availability.checkOut);
     const reservation = {
+      hotelId,
       roomId: room.roomId,
       roomTitle: room.title,
       checkIn: availability.checkIn,
@@ -347,7 +386,7 @@ async function submitReservation(event) {
       nights: availability.nights,
       guests: parseInt($("guest-count-input").value, 10),
       totalPrice: total,
-      currency: room.pricing.currency,
+      currency: room.currency,
       guestName: $("guest-name-input").value.trim(),
       guestEmail: $("guest-email-input").value.trim(),
       guestPhone: $("guest-phone-input").value.trim(),
@@ -367,7 +406,7 @@ async function submitReservation(event) {
     $("confirmation-details").innerHTML = `
       <p>Folio de reservación: <strong>${docRef.id}</strong></p>
       <p>${room.title} · ${availability.checkIn} → ${availability.checkOut}</p>
-      <p>Total: ${formatMoney(total, room.pricing.currency)}</p>
+      <p>Total: ${formatMoney(total, room.currency)}</p>
       <p>Enviamos los detalles a ${reservation.guestEmail}.</p>
     `;
   } catch (error) {
@@ -397,11 +436,16 @@ async function sendConfirmationEmail(reservation, reservationId) {
   }
 }
 
-function init() {
-  loadHotelData().catch((error) => {
-    console.error("Error al cargar la configuración de la página:", error);
-    $("hero-headline").textContent = "Error al cargar la información";
-  });
+async function init() {
+  try {
+    await loadHotelData();
+  } catch (error) {
+    console.error("Error al cargar la configuración del hotel:", error);
+    showHotelNotFound();
+    return;
+  }
+
+  if (!hotelData) return;
 
   $("btn-search-availability").addEventListener("click", searchAvailability);
   $("guest-form").addEventListener("submit", submitReservation);

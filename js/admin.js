@@ -1,25 +1,34 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth,
   signInWithEmailAndPassword,
   onAuthStateChanged,
-  signOut
+  signOut,
+  createUserWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore,
-  collection,
-  getDocs,
   doc,
+  getDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
-  orderBy,
-  query
+  collection,
+  getDocs,
+  addDoc,
+  query,
+  where,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig, githubRepoConfig } from "./firebase-config.js";
+import { firebaseConfig } from "./firebase-config.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+let currentRole = null;
+let currentHotelId = null;
+let hotelsCache = [];
 
 const $ = (id) => document.getElementById(id);
 
@@ -27,11 +36,40 @@ function formatMoney(amount, currency) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: currency || "MXN" }).format(amount || 0);
 }
 
+async function loadHotelsCache() {
+  const snapshot = await getDocs(collection(db, "hotels"));
+  hotelsCache = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+}
+
+function populateHotelSelects() {
+  const contextSelect = $("hotel-context-select");
+  const adminHotelSelect = $("new-admin-hotel");
+
+  [contextSelect, adminHotelSelect].forEach((select) => {
+    select.innerHTML = "";
+    hotelsCache.forEach((hotel) => {
+      const option = document.createElement("option");
+      option.value = hotel.id;
+      option.textContent = hotel.propertyName || hotel.id;
+      select.appendChild(option);
+    });
+  });
+
+  if (hotelsCache.length > 0) {
+    contextSelect.value = currentHotelId || hotelsCache[0].id;
+  }
+}
+
 async function loadReservations() {
   const tbody = $("reservations-tbody");
+  if (!currentHotelId) {
+    tbody.innerHTML = `<tr><td colspan="9">Selecciona o crea un hotel primero.</td></tr>`;
+    return;
+  }
+
   tbody.innerHTML = `<tr><td colspan="9">Cargando reservaciones...</td></tr>`;
 
-  const q = query(collection(db, "reservations"), orderBy("checkIn", "asc"));
+  const q = query(collection(db, "reservations"), where("hotelId", "==", currentHotelId));
   const snapshot = await getDocs(q);
 
   if (snapshot.empty) {
@@ -39,12 +77,15 @@ async function loadReservations() {
     return;
   }
 
+  const reservations = snapshot.docs
+    .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+    .sort((a, b) => (a.checkIn > b.checkIn ? 1 : -1));
+
   tbody.innerHTML = "";
-  snapshot.forEach((docSnap) => {
-    const r = docSnap.data();
+  reservations.forEach((r) => {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>${docSnap.id}</td>
+      <td>${r.id}</td>
       <td>${r.roomTitle || r.roomId}</td>
       <td>${r.checkIn}</td>
       <td>${r.checkOut}</td>
@@ -53,8 +94,8 @@ async function loadReservations() {
       <td>${formatMoney(r.totalPrice, r.currency)}</td>
       <td><span class="status-badge status-${r.status}">${r.status}</span></td>
       <td>
-        ${r.status !== "cancelled" ? `<button class="btn-small btn-cancel" data-id="${docSnap.id}">Cancelar</button>` : ""}
-        <button class="btn-small btn-delete" data-id="${docSnap.id}">Eliminar</button>
+        ${r.status !== "cancelled" ? `<button class="btn-small btn-cancel" data-id="${r.id}">Cancelar</button>` : ""}
+        <button class="btn-small btn-delete" data-id="${r.id}">Eliminar</button>
       </td>
     `;
     tbody.appendChild(row);
@@ -77,92 +118,40 @@ async function loadReservations() {
   });
 }
 
-let hotelDataCache = null;
-let dataSha = null;
-
-function utf8ToBase64(str) {
-  const bytes = new TextEncoder().encode(str);
-  let binary = "";
-  bytes.forEach((b) => {
-    binary += String.fromCharCode(b);
-  });
-  return btoa(binary);
-}
-
-function base64ToUtf8(b64) {
-  const binary = atob(b64.replace(/\n/g, ""));
-  const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
-}
-
-function githubHeaders(token) {
-  return {
-    Authorization: `Bearer ${token}`,
-    Accept: "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28"
-  };
-}
-
-async function loadRatesFromGitHub() {
-  const token = $("github-token-input").value.trim();
-  const statusEl = $("rates-status");
-  statusEl.style.color = "";
-  statusEl.textContent = "";
-
-  if (!token) {
-    statusEl.textContent = "Ingresa tu token de GitHub primero.";
+async function loadRoomsEditor() {
+  const list = $("rooms-editor-list");
+  if (!currentHotelId) {
+    list.innerHTML = "<p>Selecciona o crea un hotel primero.</p>";
     return;
   }
 
-  try {
-    const { owner, repo, branch, dataPath } = githubRepoConfig;
-    const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/contents/${dataPath}?ref=${branch}`,
-      { headers: githubHeaders(token) }
-    );
-
-    if (!response.ok) {
-      throw new Error(`GitHub respondió ${response.status}`);
-    }
-
-    const fileData = await response.json();
-    dataSha = fileData.sha;
-    hotelDataCache = JSON.parse(base64ToUtf8(fileData.content));
-
-    renderRoomsEditor();
-    $("rates-editor").classList.remove("hidden");
-  } catch (error) {
-    console.error("Error al cargar data.json desde GitHub:", error);
-    statusEl.textContent = "No se pudo cargar data.json. Verifica que el token sea válido y tenga permiso sobre este repositorio.";
-  }
-}
-
-function renderRoomsEditor() {
-  const list = $("rooms-editor-list");
+  const snapshot = await getDocs(collection(db, "hotels", currentHotelId, "rooms"));
   list.innerHTML = "";
-  hotelDataCache.roomInventory.forEach((room, index) => {
-    list.appendChild(buildRoomEditorCard(room, index));
+  snapshot.forEach((roomDoc) => {
+    list.appendChild(buildRoomEditorCard(roomDoc.id, roomDoc.data()));
   });
 }
 
-function buildRoomEditorCard(room, index) {
+function buildRoomEditorCard(roomId, room) {
   const card = document.createElement("div");
   card.className = "room-editor-card";
-  card.dataset.index = index;
 
   card.innerHTML = `
     <div class="room-editor-header">
-      <h3>Habitación ${index + 1}</h3>
-      <button type="button" class="btn-small btn-delete" data-action="remove-room">Eliminar</button>
+      <h3>${room.title || "Habitación"}</h3>
+      <div>
+        <button type="button" class="btn-small btn-cancel" data-action="save-room">Guardar</button>
+        <button type="button" class="btn-small btn-delete" data-action="remove-room">Eliminar</button>
+      </div>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>ID de habitación</label>
-        <input type="text" data-field="roomId" value="${room.roomId || ""}">
-      </div>
-      <div class="form-group">
         <label>Título</label>
         <input type="text" data-field="title" value="${room.title || ""}">
+      </div>
+      <div class="form-group">
+        <label>Máx. huéspedes</label>
+        <input type="number" min="1" data-field="maxGuests" value="${room.maxGuests || 1}">
       </div>
     </div>
     <div class="form-group">
@@ -176,19 +165,15 @@ function buildRoomEditorCard(room, index) {
     <div class="form-row">
       <div class="form-group">
         <label>Tarifa base</label>
-        <input type="number" min="0" step="0.01" data-field="baseRate" value="${room.pricing ? room.pricing.baseRate : 0}">
+        <input type="number" min="0" step="0.01" data-field="baseRate" value="${room.baseRate ?? 0}">
       </div>
       <div class="form-group">
         <label>Moneda</label>
-        <input type="text" data-field="currency" value="${room.pricing ? room.pricing.currency : "MXN"}">
+        <input type="text" data-field="currency" value="${room.currency || "MXN"}">
       </div>
       <div class="form-group">
         <label>Código de tarifa</label>
-        <input type="text" data-field="rateCode" value="${room.pricing ? room.pricing.rateCode : "BAR"}">
-      </div>
-      <div class="form-group">
-        <label>Máx. huéspedes</label>
-        <input type="number" min="1" data-field="maxGuests" value="${room.maxGuests || 1}">
+        <input type="text" data-field="rateCode" value="${room.rateCode || "BAR"}">
       </div>
     </div>
     <div class="form-group">
@@ -196,124 +181,265 @@ function buildRoomEditorCard(room, index) {
       <input type="text" data-field="features" value="${(room.features || []).join(", ")}">
     </div>
     <div class="form-group-checkbox">
-      <input type="checkbox" id="available-${index}" data-field="isAvailable" ${room.isAvailable ? "checked" : ""}>
-      <label for="available-${index}">Disponible para reservar</label>
+      <input type="checkbox" id="available-${roomId}" data-field="isAvailable" ${room.isAvailable ? "checked" : ""}>
+      <label for="available-${roomId}">Disponible para reservar</label>
     </div>
   `;
 
-  card.querySelector('[data-action="remove-room"]').addEventListener("click", () => {
-    collectRoomsFromEditor();
-    hotelDataCache.roomInventory.splice(index, 1);
-    renderRoomsEditor();
+  const getVal = (field) => card.querySelector(`[data-field="${field}"]`).value;
+
+  card.querySelector('[data-action="save-room"]').addEventListener("click", async () => {
+    await updateDoc(doc(db, "hotels", currentHotelId, "rooms", roomId), {
+      title: getVal("title"),
+      description: getVal("description"),
+      imageUrl: getVal("imageUrl"),
+      baseRate: parseFloat(getVal("baseRate")) || 0,
+      currency: getVal("currency"),
+      rateCode: getVal("rateCode"),
+      maxGuests: parseInt(getVal("maxGuests"), 10) || 1,
+      features: getVal("features").split(",").map((f) => f.trim()).filter(Boolean),
+      isAvailable: card.querySelector('[data-field="isAvailable"]').checked
+    });
+    loadRoomsEditor();
+  });
+
+  card.querySelector('[data-action="remove-room"]').addEventListener("click", async () => {
+    if (confirm("¿Eliminar esta habitación?")) {
+      await deleteDoc(doc(db, "hotels", currentHotelId, "rooms", roomId));
+      loadRoomsEditor();
+    }
   });
 
   return card;
 }
 
-function collectRoomsFromEditor() {
-  const cards = document.querySelectorAll(".room-editor-card");
-  hotelDataCache.roomInventory = Array.from(cards).map((card) => {
-    const getVal = (field) => card.querySelector(`[data-field="${field}"]`).value;
-    return {
-      roomId: getVal("roomId"),
-      title: getVal("title"),
-      description: getVal("description"),
-      imageUrl: getVal("imageUrl"),
-      pricing: {
-        baseRate: parseFloat(getVal("baseRate")) || 0,
-        currency: getVal("currency"),
-        rateCode: getVal("rateCode")
-      },
-      maxGuests: parseInt(getVal("maxGuests"), 10) || 1,
-      features: getVal("features").split(",").map((f) => f.trim()).filter(Boolean),
-      isAvailable: card.querySelector('[data-field="isAvailable"]').checked
-    };
-  });
-}
-
-function addEmptyRoom() {
-  if (!hotelDataCache) return;
-  collectRoomsFromEditor();
-  hotelDataCache.roomInventory.push({
-    roomId: `HAB-${Date.now()}`,
+async function addEmptyRoom() {
+  if (!currentHotelId) {
+    alert("Selecciona o crea un hotel primero.");
+    return;
+  }
+  await addDoc(collection(db, "hotels", currentHotelId, "rooms"), {
     title: "Nueva Habitación",
     description: "",
     imageUrl: "",
-    pricing: { baseRate: 0, currency: "MXN", rateCode: "BAR" },
+    baseRate: 0,
+    currency: "MXN",
+    rateCode: "BAR",
     maxGuests: 2,
     features: [],
     isAvailable: true
   });
-  renderRoomsEditor();
+  loadRoomsEditor();
 }
 
-async function saveRatesToGitHub() {
-  const token = $("github-token-input").value.trim();
-  const statusEl = $("rates-status");
-  const saveBtn = $("save-rates-btn");
+function renderHotelsAdminList() {
+  const container = $("hotels-admin-list");
+  if (hotelsCache.length === 0) {
+    container.innerHTML = "<p>Aún no hay hoteles creados.</p>";
+    return;
+  }
+  container.innerHTML = `
+    <table class="reservations-table">
+      <thead><tr><th>Identificador</th><th>Nombre</th><th>Ubicación</th></tr></thead>
+      <tbody>
+        ${hotelsCache.map((h) => `<tr><td>${h.id}</td><td>${h.propertyName || ""}</td><td>${h.location || ""}</td></tr>`).join("")}
+      </tbody>
+    </table>
+  `;
+}
 
-  if (!token || !hotelDataCache) return;
-
-  collectRoomsFromEditor();
-
-  saveBtn.disabled = true;
-  saveBtn.textContent = "Guardando...";
-  statusEl.style.color = "";
+async function createHotel(event) {
+  event.preventDefault();
+  const statusEl = $("create-hotel-status");
   statusEl.textContent = "";
+  statusEl.style.color = "";
+
+  const hotelId = $("new-hotel-id").value.trim().toLowerCase();
+  if (!/^[a-z0-9-]+$/.test(hotelId)) {
+    statusEl.textContent = "El identificador solo puede tener letras minúsculas, números y guiones.";
+    return;
+  }
+
+  const existing = await getDoc(doc(db, "hotels", hotelId));
+  if (existing.exists()) {
+    statusEl.textContent = "Ya existe un hotel con ese identificador.";
+    return;
+  }
+
+  await setDoc(doc(db, "hotels", hotelId), {
+    propertyName: $("new-hotel-name").value.trim(),
+    location: $("new-hotel-location").value.trim(),
+    currency: $("new-hotel-currency").value.trim() || "MXN",
+    checkInTime: "15:00",
+    checkOutTime: "12:00",
+    heroHeadline: $("new-hotel-headline").value.trim(),
+    heroSubheadline: $("new-hotel-subheadline").value.trim(),
+    heroImage: $("new-hotel-image").value.trim(),
+    createdAt: serverTimestamp()
+  });
+
+  statusEl.style.color = "#1e7e34";
+  statusEl.textContent = `Hotel creado. URL: /hotel/${hotelId}`;
+  $("create-hotel-form").reset();
+  $("new-hotel-currency").value = "MXN";
+
+  await loadHotelsCache();
+  populateHotelSelects();
+  renderHotelsAdminList();
+}
+
+async function createHotelAdmin(event) {
+  event.preventDefault();
+  const statusEl = $("create-admin-status");
+  statusEl.textContent = "";
+  statusEl.style.color = "";
+
+  const email = $("new-admin-email").value.trim();
+  const password = $("new-admin-password").value;
+  const hotelId = $("new-admin-hotel").value;
+
+  if (!hotelId) {
+    statusEl.textContent = "Crea un hotel primero.";
+    return;
+  }
+
+  const secondaryApp = initializeApp(firebaseConfig, `secondary-${Date.now()}`);
+  const secondaryAuth = getAuth(secondaryApp);
 
   try {
-    const { owner, repo, branch, dataPath } = githubRepoConfig;
-    const updatedContent = JSON.stringify(hotelDataCache, null, 2) + "\n";
+    const credential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+    await setDoc(doc(db, "adminUsers", credential.user.uid), {
+      role: "hotel_admin",
+      hotelId
+    });
+    await signOut(secondaryAuth);
 
-    const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/contents/${dataPath}`,
-      {
-        method: "PUT",
-        headers: githubHeaders(token),
-        body: JSON.stringify({
-          message: "Actualizar tarifas y habitaciones desde el panel admin",
-          content: utf8ToBase64(updatedContent),
-          sha: dataSha,
-          branch
-        })
-      }
-    );
-
-    if (!response.ok) {
-      const errBody = await response.json().catch(() => ({}));
-      throw new Error(errBody.message || `GitHub respondió ${response.status}`);
-    }
-
-    const result = await response.json();
-    dataSha = result.content.sha;
     statusEl.style.color = "#1e7e34";
-    statusEl.textContent = "Cambios guardados. GitHub Pages tardará ~1 minuto en publicarlos.";
+    statusEl.textContent = `Administrador creado para ${hotelId}.`;
+    $("create-admin-form").reset();
   } catch (error) {
-    console.error("Error al guardar data.json en GitHub:", error);
-    statusEl.style.color = "#b00020";
-    statusEl.textContent = `No se pudo guardar: ${error.message}`;
+    console.error("Error al crear administrador:", error);
+    statusEl.textContent = "No se pudo crear el administrador: " + error.message;
   } finally {
-    saveBtn.disabled = false;
-    saveBtn.textContent = "Guardar cambios en GitHub";
+    await deleteApp(secondaryApp);
   }
 }
 
+async function importFromDataJson() {
+  const statusEl = $("import-status");
+  statusEl.textContent = "";
+  statusEl.style.color = "";
+
+  const hotelId = $("import-hotel-id").value.trim().toLowerCase();
+  if (!/^[a-z0-9-]+$/.test(hotelId)) {
+    statusEl.textContent = "El identificador solo puede tener letras minúsculas, números y guiones.";
+    return;
+  }
+
+  try {
+    const response = await fetch("/data.json");
+    const data = await response.json();
+
+    await setDoc(doc(db, "hotels", hotelId), {
+      propertyName: data.hotelSettings.propertyName,
+      location: data.hotelSettings.location,
+      currency: data.hotelSettings.currency || "MXN",
+      checkInTime: data.hotelSettings.checkInTime || "15:00",
+      checkOutTime: data.hotelSettings.checkOutTime || "12:00",
+      heroHeadline: data.heroSection.headline,
+      heroSubheadline: data.heroSection.subheadline,
+      heroImage: data.heroSection.heroImage,
+      createdAt: serverTimestamp()
+    });
+
+    for (const room of data.roomInventory) {
+      await setDoc(doc(db, "hotels", hotelId, "rooms", room.roomId), {
+        title: room.title,
+        description: room.description,
+        imageUrl: room.imageUrl,
+        baseRate: room.pricing.baseRate,
+        currency: room.pricing.currency,
+        rateCode: room.pricing.rateCode,
+        maxGuests: room.maxGuests || 2,
+        features: room.features || [],
+        isAvailable: room.isAvailable
+      });
+    }
+
+    const reservationsSnapshot = await getDocs(collection(db, "reservations"));
+    let tagged = 0;
+    for (const reservationDoc of reservationsSnapshot.docs) {
+      if (!reservationDoc.data().hotelId) {
+        await updateDoc(doc(db, "reservations", reservationDoc.id), { hotelId });
+        tagged++;
+      }
+    }
+
+    statusEl.style.color = "#1e7e34";
+    statusEl.textContent = `Hotel "${hotelId}" importado con ${data.roomInventory.length} habitación(es). ${tagged} reservación(es) existentes actualizadas.`;
+
+    await loadHotelsCache();
+    populateHotelSelects();
+    renderHotelsAdminList();
+  } catch (error) {
+    console.error("Error al importar data.json:", error);
+    statusEl.textContent = "No se pudo completar la importación: " + error.message;
+  }
+}
+
+async function enterDashboard(user) {
+  const adminSnap = await getDoc(doc(db, "adminUsers", user.uid));
+
+  if (!adminSnap.exists()) {
+    $("login-screen").classList.add("hidden");
+    $("dashboard-screen").classList.add("hidden");
+    $("no-role-screen").classList.remove("hidden");
+    return;
+  }
+
+  const adminData = adminSnap.data();
+  currentRole = adminData.role;
+
+  $("login-screen").classList.add("hidden");
+  $("no-role-screen").classList.add("hidden");
+  $("dashboard-screen").classList.remove("hidden");
+  $("admin-email-label").textContent = user.email;
+
+  if (currentRole === "superadmin") {
+    $("admin-role-label").textContent = "Super-administrador";
+    $("hotel-context-wrap").classList.remove("hidden");
+    $("tab-btn-hotels").classList.remove("hidden");
+
+    await loadHotelsCache();
+    populateHotelSelects();
+    renderHotelsAdminList();
+    currentHotelId = hotelsCache.length > 0 ? hotelsCache[0].id : null;
+  } else {
+    $("admin-role-label").textContent = `Administrador de ${adminData.hotelId}`;
+    $("hotel-context-wrap").classList.add("hidden");
+    $("tab-btn-hotels").classList.add("hidden");
+    currentHotelId = adminData.hotelId;
+  }
+
+  loadReservations();
+  loadRoomsEditor();
+}
+
 function initTabs() {
-  const tabReservationsBtn = $("tab-btn-reservations");
-  const tabRatesBtn = $("tab-btn-rates");
+  const tabs = {
+    reservations: { btn: $("tab-btn-reservations"), panel: $("tab-reservations") },
+    rates: { btn: $("tab-btn-rates"), panel: $("tab-rates") },
+    hotels: { btn: $("tab-btn-hotels"), panel: $("tab-hotels") }
+  };
 
-  tabReservationsBtn.addEventListener("click", () => {
-    tabReservationsBtn.classList.add("active");
-    tabRatesBtn.classList.remove("active");
-    $("tab-reservations").classList.remove("hidden");
-    $("tab-rates").classList.add("hidden");
-  });
-
-  tabRatesBtn.addEventListener("click", () => {
-    tabRatesBtn.classList.add("active");
-    tabReservationsBtn.classList.remove("active");
-    $("tab-rates").classList.remove("hidden");
-    $("tab-reservations").classList.add("hidden");
+  Object.entries(tabs).forEach(([key, { btn }]) => {
+    btn.addEventListener("click", () => {
+      Object.entries(tabs).forEach(([otherKey, { btn: otherBtn, panel: otherPanel }]) => {
+        const isActive = otherKey === key;
+        otherBtn.classList.toggle("active", isActive);
+        otherPanel.classList.toggle("hidden", !isActive);
+      });
+    });
   });
 }
 
@@ -322,13 +448,11 @@ function init() {
 
   onAuthStateChanged(auth, (user) => {
     if (user) {
-      $("login-screen").classList.add("hidden");
-      $("dashboard-screen").classList.remove("hidden");
-      $("admin-email-label").textContent = user.email;
-      loadReservations();
+      enterDashboard(user);
     } else {
-      $("login-screen").classList.remove("hidden");
       $("dashboard-screen").classList.add("hidden");
+      $("no-role-screen").classList.add("hidden");
+      $("login-screen").classList.remove("hidden");
     }
   });
 
@@ -347,11 +471,18 @@ function init() {
   });
 
   $("logout-btn").addEventListener("click", () => signOut(auth));
+  $("no-role-logout-btn").addEventListener("click", () => signOut(auth));
   $("refresh-btn").addEventListener("click", loadReservations);
-
-  $("load-rates-btn").addEventListener("click", loadRatesFromGitHub);
   $("add-room-btn").addEventListener("click", addEmptyRoom);
-  $("save-rates-btn").addEventListener("click", saveRatesToGitHub);
+  $("create-hotel-form").addEventListener("submit", createHotel);
+  $("create-admin-form").addEventListener("submit", createHotelAdmin);
+  $("import-data-json-btn").addEventListener("click", importFromDataJson);
+
+  $("hotel-context-select").addEventListener("change", (event) => {
+    currentHotelId = event.target.value;
+    loadReservations();
+    loadRoomsEditor();
+  });
 }
 
 document.addEventListener("DOMContentLoaded", init);

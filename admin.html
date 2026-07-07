@@ -26,17 +26,31 @@
         </div>
     </div>
 
+    <div id="no-role-screen" class="admin-page hidden">
+        <div class="login-box">
+            <h2>Cuenta sin permisos</h2>
+            <p>Tu cuenta no tiene un rol de administrador asignado. Pide al super-administrador que te agregue desde la pestaña "Hoteles".</p>
+            <button class="btn-secondary" id="no-role-logout-btn">Cerrar sesión</button>
+        </div>
+    </div>
+
     <div id="dashboard-screen" class="admin-page hidden">
         <div class="admin-header">
-            <h2>Panel de administración (<span id="admin-email-label"></span>)</h2>
+            <h2>Panel de administración (<span id="admin-email-label"></span> · <span id="admin-role-label"></span>)</h2>
             <div class="actions">
                 <button class="btn-secondary" id="logout-btn">Cerrar sesión</button>
             </div>
         </div>
 
+        <div class="form-group hidden" id="hotel-context-wrap">
+            <label for="hotel-context-select">Hotel</label>
+            <select id="hotel-context-select"></select>
+        </div>
+
         <div class="admin-tabs">
             <button class="admin-tab active" id="tab-btn-reservations">Reservaciones</button>
             <button class="admin-tab" id="tab-btn-rates">Tarifas y Habitaciones</button>
+            <button class="admin-tab hidden" id="tab-btn-hotels">Hoteles</button>
         </div>
 
         <div id="tab-reservations">
@@ -67,23 +81,89 @@
         </div>
 
         <div id="tab-rates" class="hidden">
+            <div id="rooms-editor-list"></div>
+            <button class="btn-secondary" id="add-room-btn">+ Agregar habitación</button>
+        </div>
+
+        <div id="tab-hotels" class="hidden">
             <div class="rates-token-box">
-                <p>Para guardar cambios de tarifas se necesita un <strong>token de GitHub</strong> con permiso de escritura sobre este repositorio (crea uno "fine-grained" limitado solo a <code>ceda007-gif.github.io</code> con permiso <em>Contents: Read and write</em> en <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a>). El token solo se guarda en la memoria de esta pestaña, nunca en el código.</p>
-                <div class="form-group">
-                    <label for="github-token-input">Token de GitHub</label>
-                    <input type="password" id="github-token-input" placeholder="github_pat_...">
-                </div>
-                <button class="btn-secondary" id="load-rates-btn">Cargar tarifas</button>
-                <p class="login-error" id="rates-status"></p>
+                <h3>Hoteles existentes</h3>
+                <div id="hotels-admin-list"></div>
             </div>
 
-            <div id="rates-editor" class="hidden">
-                <div id="rooms-editor-list"></div>
-                <button class="btn-secondary" id="add-room-btn">+ Agregar habitación</button>
-                <div class="admin-header">
-                    <div></div>
-                    <button class="btn-book" id="save-rates-btn">Guardar cambios en GitHub</button>
+            <div class="rates-token-box">
+                <h3>Importar el hotel existente desde data.json</h3>
+                <p>Usa esto una sola vez para migrar el hotel "Tropicana Los Cabos" (que hoy vive en <code>data.json</code>) a este panel multi-hotel. Crea el hotel y sus habitaciones en Firestore, y asigna este identificador a las reservaciones que ya existan sin uno.</p>
+                <div class="form-group">
+                    <label>Identificador para el hotel importado</label>
+                    <input type="text" id="import-hotel-id" value="tropicana-los-cabos" pattern="[a-z0-9\-]+">
                 </div>
+                <button type="button" class="btn-secondary" id="import-data-json-btn">Importar desde data.json</button>
+                <p class="login-error" id="import-status"></p>
+            </div>
+
+            <div class="rates-token-box">
+                <h3>Crear hotel nuevo</h3>
+                <form id="create-hotel-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Identificador (slug para la URL)</label>
+                            <input type="text" id="new-hotel-id" placeholder="mi-hotel" pattern="[a-z0-9\-]+" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nombre del hotel</label>
+                            <input type="text" id="new-hotel-name" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Ubicación</label>
+                            <input type="text" id="new-hotel-location">
+                        </div>
+                        <div class="form-group">
+                            <label>Moneda</label>
+                            <input type="text" id="new-hotel-currency" value="MXN">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Imagen principal (URL)</label>
+                        <input type="text" id="new-hotel-image">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Título principal</label>
+                            <input type="text" id="new-hotel-headline" value="Bienvenido">
+                        </div>
+                        <div class="form-group">
+                            <label>Subtítulo</label>
+                            <input type="text" id="new-hotel-subheadline" value="Tu próxima estadía">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-book">Crear hotel</button>
+                    <p class="login-error" id="create-hotel-status"></p>
+                </form>
+            </div>
+
+            <div class="rates-token-box">
+                <h3>Crear administrador para un hotel</h3>
+                <form id="create-admin-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Correo electrónico</label>
+                            <input type="email" id="new-admin-email" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Contraseña temporal</label>
+                            <input type="password" id="new-admin-password" minlength="6" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Hotel asignado</label>
+                            <select id="new-admin-hotel"></select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-book">Crear administrador</button>
+                    <p class="login-error" id="create-admin-status"></p>
+                </form>
             </div>
         </div>
     </div>

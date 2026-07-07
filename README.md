@@ -1,23 +1,49 @@
 # carlos.davis
 
-## Motor de reservaciones de hotel
+## Plataforma de reservaciones multi-hotel
 
-Este sitio incluye un motor de reservaciones completo hecho con HTML/CSS/JS
-puro (sin frameworks ni build), pensado para hospedarse en GitHub Pages.
+Este sitio es una plataforma que administra las reservaciones de **varios
+hoteles independientes**, cada uno con su propia página, habitaciones,
+tarifas y administrador — no es una cadena, cada hotel es un inquilino
+("tenant") separado. Está hecho con HTML/CSS/JS puro (sin frameworks ni
+build), pensado para hospedarse en GitHub Pages.
 
-- `index.html` — Sitio del hotel: búsqueda de disponibilidad por fechas y
-  huéspedes, tarjetas de habitaciones, y flujo de reservación (formulario
-  del huésped → confirmación).
-- `admin.html` — Panel de administración protegido con inicio de sesión,
-  donde se ven todas las reservaciones y se pueden cancelar o eliminar.
-- `data.json` — Contenido editable del sitio (nombre del hotel, hero,
-  inventario de habitaciones y precios).
-- `js/booking.js` — Lógica del flujo de búsqueda/reservación.
+### Estructura del sitio
+
+- `index.html` — Directorio público: lista todos los hoteles publicados,
+  cada uno enlaza a `/hotel/<identificador>`.
+- `404.html` — El motor de reservaciones de un hotel individual (búsqueda
+  de disponibilidad, calendario de tarifas, reservación). Gracias a un
+  truco estándar de GitHub Pages, cualquier URL `/hotel/<id>` que no
+  corresponde a un archivo real sirve el contenido de `404.html`
+  mantendiendo esa URL limpia en la barra de direcciones. `<id>` se lee de
+  `location.pathname` en tiempo de ejecución.
+- `admin.html` — Panel de administración. Cada cuenta tiene un rol:
+  - **`hotel_admin`**: solo ve y administra las reservaciones y tarifas de
+    su propio hotel.
+  - **`superadmin`**: además puede crear hoteles nuevos y crear cuentas de
+    administrador para cada uno, desde la pestaña "Hoteles".
+- `js/directory.js` — Lógica del directorio de hoteles (`index.html`).
+- `js/hotel-booking.js` — Lógica del motor de reservas por hotel
+  (`404.html`).
 - `js/admin.js` — Lógica del panel de administración.
-- `js/firebase-config.js` — Configuración de Firebase y EmailJS (debes
-  completarla, ver abajo).
-- `firestore.rules` — Reglas de seguridad de Firestore que debes publicar
-  en tu proyecto de Firebase.
+- `js/firebase-config.js` — Configuración de Firebase y EmailJS.
+- `firestore.rules` — Reglas de seguridad de Firestore.
+- `data.json` — Solo se usa como fuente para la **importación única** del
+  hotel original ("Tropicana Los Cabos") al nuevo modelo multi-hotel (ver
+  sección 5). Los hoteles creados después de esa migración no usan este
+  archivo: viven enteramente en Firestore.
+
+### Modelo de datos en Firestore
+
+- `hotels/{hotelId}` — datos generales del hotel (nombre, ubicación,
+  moneda, imagen principal, etc.). `hotelId` es el mismo identificador que
+  aparece en la URL (`/hotel/{hotelId}`).
+- `hotels/{hotelId}/rooms/{roomId}` — habitaciones y tarifas de ese hotel.
+- `reservations/{reservationId}` — reservaciones de **todos** los
+  hoteles; cada una tiene un campo `hotelId` que indica a cuál pertenece.
+- `adminUsers/{uid}` — el rol de cada cuenta de administrador:
+  `{ role: "superadmin" }` o `{ role: "hotel_admin", hotelId: "..." }`.
 
 Las reservaciones se guardan en **Firebase Firestore**, y el envío del
 correo de confirmación usa **EmailJS**. Ambos tienen planes gratuitos y no
@@ -31,7 +57,7 @@ requieren tarjeta de crédito para este uso.
 3. Entra a **Compilación → Authentication → Sign-in method** y habilita el
    proveedor **Correo electrónico/Contraseña**.
 4. Ve a la pestaña **Users** de Authentication → "Agregar usuario" → crea
-   tu cuenta de administrador (el correo/contraseña con los que entrarás a
+   tu cuenta (el correo/contraseña con los que vas a entrar a
    `admin.html`).
 5. Ve a **Configuración del proyecto** (ícono de engrane) → baja hasta
    "Tus apps" → agrega una app web (ícono `</>`) → te mostrará un objeto
@@ -46,11 +72,26 @@ requieren tarjeta de crédito para este uso.
    pégalo, reemplazando lo que había.
 3. Presiona **Publicar**.
 
-Estas reglas permiten que cualquier visitante cree una reservación (para
-que el formulario público funcione), pero solo tu usuario autenticado
-puede ver, editar o borrar reservaciones desde `admin.html`.
+### 3. Volverte super-administrador (paso único)
 
-### 3. Configurar EmailJS (correo de confirmación) — opcional
+Como todavía no existe ningún administrador, este primer paso se hace a
+mano, una sola vez, directamente en la consola de Firebase (las reglas de
+seguridad no permiten crear este primer registro desde el propio sitio,
+a propósito, para que nadie más pueda auto-asignarse el rol):
+
+1. En Authentication → Users, copia el **UID** completo de tu usuario
+   (la columna "UID del usuario").
+2. Ve a Firestore Database → pestaña **Datos** → **"+ Iniciar colección"**.
+3. ID de la colección: `adminUsers`.
+4. ID del documento: pega tu **UID** (no lo escribas tú, debe ser exacto).
+5. Agrega un campo: nombre `role`, tipo `string`, valor `superadmin`.
+6. Guarda.
+
+Con esto, al entrar a `admin.html` con tu cuenta verás la pestaña
+"Hoteles" y podrás crear hoteles y otros administradores desde ahí sin
+volver a tocar la consola.
+
+### 4. Configurar EmailJS (correo de confirmación) — opcional
 
 1. Crea una cuenta gratuita en https://www.emailjs.com
 2. En **Email Services**, conecta tu cuenta de Gmail/Outlook y copia el
@@ -63,68 +104,54 @@ puede ver, editar o borrar reservaciones desde `admin.html`.
    `js/firebase-config.js`.
 
 Si dejas `emailjsConfig.publicKey` vacío, el sitio funciona igual pero
-simplemente no envía el correo de confirmación (la reservación se guarda
-normalmente en Firestore).
+simplemente no envía el correo de confirmación.
 
-### 4. Editar el contenido del hotel
+### 5. Migrar el hotel original (Tropicana Los Cabos)
 
-Todo el contenido visible (nombre, imágenes, habitaciones, precios) está
-en `data.json`. Puedes editarlo directamente en el repositorio, o usar la
-pestaña **"Tarifas y Habitaciones"** dentro de `admin.html` (ver siguiente
-sección).
+Este sitio ya tenía un hotel funcionando antes de volverse multi-hotel.
+Para migrarlo al nuevo modelo, una sola vez:
 
-### 4.1 Editar tarifas desde el panel admin
+1. Entra a `admin.html` con tu cuenta de super-administrador.
+2. Ve a la pestaña **"Hoteles"**.
+3. En "Importar el hotel existente desde data.json", confirma o cambia el
+   identificador (por defecto `tropicana-los-cabos`) y presiona
+   **"Importar desde data.json"**.
 
-La pestaña "Tarifas y Habitaciones" de `admin.html` permite agregar,
-editar o eliminar habitaciones y precios sin tocar código. Como este es un
-sitio estático (sin servidor propio), guarda los cambios haciendo un
-commit a `data.json` directamente vía la API de GitHub, usando un token
-que tú generas:
+Esto crea el hotel y sus habitaciones en Firestore, y le asigna ese mismo
+`hotelId` a cualquier reservación que ya existiera de antes (de cuando el
+sitio todavía era de un solo hotel). El hotel migrado queda disponible en
+`/hotel/tropicana-los-cabos` igual que cualquier otro.
 
-1. Ve a https://github.com/settings/personal-access-tokens/new
-2. Crea un token **"Fine-grained"** limitado solo al repositorio
-   `ceda007-gif.github.io` (no a toda tu cuenta), con permiso
-   **Repository permissions → Contents: Read and write**.
-3. En `admin.html`, pestaña "Tarifas y Habitaciones", pega el token y
-   presiona "Cargar tarifas".
-4. Edita lo que necesites y presiona "Guardar cambios en GitHub". Esto
-   crea un commit directo a `main`; GitHub Pages lo publica en ~1 minuto.
+### 6. Crear un hotel nuevo
 
-El token solo vive en la memoria de esa pestaña del navegador (nunca se
-guarda en el código ni en Firestore) — tendrás que pegarlo de nuevo cada
-vez que quieras editar tarifas. Guárdalo en un lugar seguro y no lo
-compartas: quien lo tenga puede escribir en este repositorio.
+Desde la pestaña "Hoteles" (solo visible para super-administradores):
 
-### 4.2 Calendario de tarifas para el huésped
+1. Llena el formulario "Crear hotel nuevo" (identificador, nombre,
+   ubicación, moneda, imagen principal). El identificador se vuelve la
+   URL del hotel: `/hotel/<identificador>`.
+2. Agrega sus habitaciones desde la pestaña "Tarifas y Habitaciones"
+   (selecciona primero el hotel en el menú desplegable de arriba).
+3. Opcionalmente, en "Crear administrador para un hotel", da de alta una
+   cuenta que solo pueda administrar ese hotel específico (no verá los
+   demás).
 
-En vez de simples campos de fecha, `index.html` muestra un calendario
-mensual donde cada día visible indica la tarifa más baja disponible ese
-día (calculada entre todas las habitaciones libres esa noche) y navega
-mes a mes. Los días donde **todas** las habitaciones ya están reservadas
-se muestran tachados y no se pueden seleccionar. El huésped hace clic en
-un día para marcar la llegada y en otro día posterior para la salida.
+### 7. Calendario de tarifas para el huésped
 
-Por defecto todas las noches usan la tarifa base de cada habitación
-(`pricing.baseRate` en `data.json`). Si quieres precios distintos para
-fechas específicas (temporada alta, fines de semana, etc.), agrega un
-objeto `dateOverrides` dentro de `pricing` de la habitación en
-`data.json`, con el formato `"YYYY-MM-DD": tarifa`, por ejemplo:
+`404.html` (la página de cada hotel) muestra un calendario mensual donde
+cada día indica la tarifa más baja disponible esa noche (calculada entre
+las habitaciones libres) y navega mes a mes. Los días donde **todas** las
+habitaciones ya están reservadas se muestran tachados. El huésped hace
+clic en un día para marcar la llegada y en otro para la salida.
 
-```json
-"pricing": {
-  "baseRate": 3500,
-  "currency": "MXN",
-  "rateCode": "BAR",
-  "dateOverrides": {
-    "2026-12-24": 4800,
-    "2026-12-31": 5200
-  }
-}
-```
+Por defecto todas las noches usan `baseRate` de cada habitación. Para
+precios distintos por fecha (temporada alta, fines de semana), agrega un
+campo `dateOverrides` al documento de la habitación en Firestore, con el
+formato `{ "2026-12-24": 4800, "2026-12-31": 5200 }`. Cualquier fecha sin
+entrada ahí usa `baseRate` normalmente. (La edición de `dateOverrides`
+desde el panel admin no está incluida todavía; se agrega directamente en
+el documento desde la consola de Firestore.)
 
-Cualquier fecha sin entrada en `dateOverrides` usa `baseRate` normalmente.
-
-### 5. Publicar
+### 8. Publicar
 
 Con GitHub Pages, basta con hacer push a la rama publicada como sitio
 (usualmente `main`). No hay paso de build.
@@ -133,10 +160,15 @@ Con GitHub Pages, basta con hacer push a la rama publicada como sitio
 
 - La verificación de disponibilidad se hace desde el navegador en el
   momento de reservar; si dos personas reservan la misma habitación en el
-  mismo segundo podría haber una colisión rara. Para un hotel pequeño esto
-  es aceptable; para mayor volumen se recomendaría mover esta validación a
-  una Cloud Function con una transacción.
-- El panel de administración usa Firebase Authentication (no una
-  contraseña fija en el código), por lo que es seguro exponer este sitio
-  públicamente: solo quien tenga una cuenta creada en tu proyecto de
-  Firebase puede ver o modificar las reservaciones.
+  mismo segundo podría haber una colisión rara. Para mayor volumen se
+  recomendaría mover esta validación a una Cloud Function con una
+  transacción.
+- `404.html` responde con estado HTTP 404 aunque el contenido se vea
+  normal (es el truco que usa GitHub Pages para dar URLs limpias sin un
+  servidor propio). Esto no afecta a las personas navegando el sitio, pero
+  sí significa que estas páginas no se indexan bien en buscadores; si el
+  SEO importa, a futuro conviene mover el hosting a algo con rutas del
+  lado del servidor.
+- El panel de administración usa Firebase Authentication con roles
+  (`adminUsers`), no contraseñas fijas en el código: cada administrador
+  solo ve el hotel que tiene asignado, excepto el/los super-administrador(es).
