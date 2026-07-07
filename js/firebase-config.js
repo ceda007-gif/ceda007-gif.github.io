@@ -19,12 +19,12 @@
 // la protección real de tus datos la dan las reglas de Firestore.
 
 export const firebaseConfig = {
-  apiKey: "TU_API_KEY",
-  authDomain: "tu-proyecto.firebaseapp.com",
-  projectId: "tu-proyecto",
-  storageBucket: "tu-proyecto.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:xxxxxxxxxxxxxxxxxxxxxx"
+  apiKey: "AIzaSyBM9mlVnUgb9pOrYu_6JFniIKRqcYQ7Rd0",
+  authDomain: "carlos-3fc62.firebaseapp.com",
+  projectId: "carlos-3fc62",
+  storageBucket: "carlos-3fc62.firebasestorage.app",
+  messagingSenderId: "1058395664591",
+  appId: "1:1058395664591:web:3aae04e471ece4c8e787ba"
 };
 
 // Configuración de EmailJS para enviar el correo de confirmación al huésped.
