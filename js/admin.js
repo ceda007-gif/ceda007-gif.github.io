@@ -56,7 +56,11 @@ function populateHotelSelects() {
   });
 
   if (hotelsCache.length > 0) {
-    contextSelect.value = currentHotelId || hotelsCache[0].id;
+    const stillExists = hotelsCache.some((hotel) => hotel.id === currentHotelId);
+    contextSelect.value = stillExists ? currentHotelId : hotelsCache[0].id;
+    currentHotelId = contextSelect.value;
+  } else {
+    currentHotelId = null;
   }
 }
 
@@ -283,9 +287,12 @@ async function createHotel(event) {
   $("create-hotel-form").reset();
   $("new-hotel-currency").value = "MXN";
 
+  currentHotelId = hotelId;
   await loadHotelsCache();
   populateHotelSelects();
   renderHotelsAdminList();
+  loadReservations();
+  loadRoomsEditor();
 }
 
 async function createHotelAdmin(event) {
@@ -378,9 +385,12 @@ async function importFromDataJson() {
     statusEl.style.color = "#1e7e34";
     statusEl.textContent = `Hotel "${hotelId}" importado con ${data.roomInventory.length} habitación(es). ${tagged} reservación(es) existentes actualizadas.`;
 
+    currentHotelId = hotelId;
     await loadHotelsCache();
     populateHotelSelects();
     renderHotelsAdminList();
+    loadReservations();
+    loadRoomsEditor();
   } catch (error) {
     console.error("Error al importar data.json:", error);
     statusEl.textContent = "No se pudo completar la importación: " + error.message;
@@ -413,7 +423,6 @@ async function enterDashboard(user) {
     await loadHotelsCache();
     populateHotelSelects();
     renderHotelsAdminList();
-    currentHotelId = hotelsCache.length > 0 ? hotelsCache[0].id : null;
   } else {
     $("admin-role-label").textContent = `Administrador de ${adminData.hotelId}`;
     $("hotel-context-wrap").classList.add("hidden");
