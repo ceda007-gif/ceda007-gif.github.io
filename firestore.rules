@@ -18,22 +18,22 @@ rules_version = '2';
 //   habitaciones, y solo las de su propio hotel (o todas, si es superadmin).
 // - Solo un superadmin puede crear hoteles nuevos o asignar administradores.
 
-function adminData() {
-  return get(/databases/$(database)/documents/adminUsers/$(request.auth.uid)).data;
-}
-
-function isSuperadmin() {
-  return request.auth != null && adminData().role == 'superadmin';
-}
-
-function isHotelAdmin(hotelId) {
-  return request.auth != null
-    && adminData().role == 'hotel_admin'
-    && adminData().hotelId == hotelId;
-}
-
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function adminData() {
+      return get(/databases/$(database)/documents/adminUsers/$(request.auth.uid)).data;
+    }
+
+    function isSuperadmin() {
+      return request.auth != null && adminData().role == 'superadmin';
+    }
+
+    function isHotelAdmin(hotelId) {
+      return request.auth != null
+        && adminData().role == 'hotel_admin'
+        && adminData().hotelId == hotelId;
+    }
 
     match /hotels/{hotelId} {
       allow read: if true;
